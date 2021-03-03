@@ -3,8 +3,7 @@
 #include <sys/stat.h>
 #include <string.h>
 
-__mode_t parse_perms(char* perms){
-    __mode_t ret;
+__mode_t parse_perms(char* perms, char* filename){
     size_t len = strlen(perms);
     char target = 'a';
     char mode;
@@ -38,11 +37,12 @@ __mode_t parse_perms(char* perms){
             break;
     }    
 
-    return ret;
+    return get_perms(read, write, execute, mode, target, filename);
 }
 
 
-__mode_t get_perms(unsigned int r, unsigned int w, unsigned int x, char op, char target, __mode_t ret){
+__mode_t get_perms(unsigned int r, unsigned int w, unsigned int x, char op, char target, char* filename){
+    __mode_t ret;
     unsigned int modes[3] = {r, w, x};
     unsigned int targets[3] = {0, 0, 0};
     if(target == 'a'){
@@ -53,6 +53,11 @@ __mode_t get_perms(unsigned int r, unsigned int w, unsigned int x, char op, char
         if(target == 'o') targets[0] = 1;
     }
     if(op == '+'){
+        struct stat stb;
+        if(stat(filename, &stb) != 0){
+            perror("Stat");
+        }
+        ret = stb.st_mode;
         //ret = permissões do ficheiro;
         for(int i = 0; i < 3; i++){
             for(int j = 0; j < 3; j++){
@@ -67,6 +72,11 @@ __mode_t get_perms(unsigned int r, unsigned int w, unsigned int x, char op, char
             }
         }
     } else if (op == '-'){
+        struct stat stb;
+        if(stat(filename, &stb) != 0){
+            perror("Stat");
+        }
+        ret = stb.st_mode;
         //ret = permissões do ficheiro
         for(int i = 0; i < 3; i++){
             for(int j = 0; j < 3; j++){
@@ -84,9 +94,11 @@ int main(int argc, char* argv[]){
         exit(1);
     }
 
-    __mode_t mode = parse_perms(argv[1]);
+    __mode_t mode = parse_perms(argv[1], argv[2]);
 
-
+    if(chmod(argv[2], mode) != 0){
+        perror("chmod");
+    }
 
     return 0;
 }
