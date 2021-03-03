@@ -3,19 +3,24 @@
 #include <sys/stat.h>
 #include <string.h>
 
+__mode_t parse_perms(char* perms, char* filename);
+__mode_t get_perms(unsigned int r, unsigned int w, unsigned int x, char op, char target, char* filename);
+
 __mode_t parse_perms(char* perms, char* filename){
     size_t len = strlen(perms);
     char target = 'a';
     char mode;
     unsigned int read = 0, write = 0, execute = 0;
     for(int i = len - 2; perms[i] != '+' && perms[i] != '-' && perms[i] != '=' && i > 0; i--){
-        if(perms[i] == 'u') read = 1;
+        if(perms[i] == 'r') read = 1;
         if(perms[i] == 'w') write = 1;
-        if(perms[i] == 'x') execute = 1;   
+        if(perms[i] == 'x') execute = 1;
     }
 
-    if(!read && !write && !execute) exit(1);
-
+    if(!read && !write && !execute){
+	 printf("Ganda murcao puseste isso mal ze\n");
+	 exit(1);
+    }
     switch (perms[0]){
         case 'u':
             target = 'u';
@@ -35,14 +40,14 @@ __mode_t parse_perms(char* perms, char* filename){
         default:
             mode = perms[0];
             break;
-    }    
+    }
 
     return get_perms(read, write, execute, mode, target, filename);
 }
 
 
 __mode_t get_perms(unsigned int r, unsigned int w, unsigned int x, char op, char target, char* filename){
-    __mode_t ret;
+    __mode_t ret = 0;
     unsigned int modes[3] = {r, w, x};
     unsigned int targets[3] = {0, 0, 0};
     if(target == 'a'){
@@ -82,7 +87,7 @@ __mode_t get_perms(unsigned int r, unsigned int w, unsigned int x, char op, char
             for(int j = 0; j < 3; j++){
                 ret &= ~(modes[i]*targets[j] << (((2 - i) + 3*j)));
             }
-        } 
+        }
     }
 
     return ret;
