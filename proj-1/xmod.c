@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/stat.h>
+#include <dirent.h>
 #include <string.h>
 
 __mode_t parse_perms(char* perms, char* filename);
@@ -99,10 +100,42 @@ int main(int argc, char* argv[]){
         exit(1);
     }
 
-    __mode_t mode = parse_perms(argv[1], argv[2]);
+    struct stat st;
+    if(stat(argv[2], &st) != 0) {
+        perror("stat");
+        exit(1);
+    }
 
-    if(chmod(argv[2], mode) != 0){
-        perror("chmod");
+    __mode_t arg_info = st.st_mode;
+    if((arg_info & __S_IFDIR) != 0){
+        //filename points to a dir
+        char filename[100]; strcpy(filename, "./");
+        DIR* d;
+        struct dirent *dir;
+        d = opendir(argv[2]);
+        if(d) {
+            while((dir = readdir(d)) != NULL){
+                if(dir->d_type == DT_REG) { //if it is a regular file
+                    strcpy(filename, "./");
+                    strcat(filename, argv[2]); strcat(filename, "/"); // filename = dir_name/
+                    
+                    strcat(filename, dir->d_name);
+                    __mode_t mode = parse_perms(argv[1], filename);
+
+                    if(chmod(filename, mode) != 0){
+                        perror("chmod");
+                    }
+                }
+            }
+        }
+    } else {
+        //filename points to a file
+        __mode_t mode = parse_perms(argv[1], argv[2]);
+
+        if(chmod(argv[2], mode) != 0){
+            perror("chmod");
+            exit(1);
+        }
     }
 
     return 0;
