@@ -60,7 +60,7 @@ __mode_t get_perms(unsigned int r, unsigned int w, unsigned int x, char op, char
     }
     if(op == '+'){
         struct stat stb;
-        if(stat(filename, &stb) != 0){
+        if(stat(filename, &stb) != 0){	//get permissions
             perror("Stat");
         }
         ret = stb.st_mode;
@@ -108,6 +108,8 @@ int main(int argc, char* argv[]){
 
     __mode_t arg_info = st.st_mode;
     if((arg_info & __S_IFDIR) != 0){
+	//printf("Im the directory: %s", argv[2]);
+
         //filename points to a dir
         char filename[100]; strcpy(filename, "./");
         DIR* d;
@@ -118,7 +120,7 @@ int main(int argc, char* argv[]){
                 if(dir->d_type == DT_REG) { //if it is a regular file
                     strcpy(filename, "./");
                     strcat(filename, argv[2]); strcat(filename, "/"); // filename = dir_name/
-                    
+
                     strcat(filename, dir->d_name);
                     __mode_t mode = parse_perms(argv[1], filename);
 
@@ -127,11 +129,17 @@ int main(int argc, char* argv[]){
                     }
                 }
             }
+	    __mode_t mode = parse_perms(argv[1], argv[2]);
+            //printf("Im the directory: %s", argv[2]);
+            if(chmod(argv[2], mode) != 0){
+            	perror("chmod");
+            	exit(1);
+            }
         }
     } else {
         //filename points to a file
         __mode_t mode = parse_perms(argv[1], argv[2]);
-
+	//printf("Im the directory: %s", argv[2]);
         if(chmod(argv[2], mode) != 0){
             perror("chmod");
             exit(1);
