@@ -103,32 +103,28 @@ void chmod_dir(char* cmd, char* dir_name){
     d = opendir(dir_name);
     if(d) {
         while((dir = readdir(d)) != NULL){
-            if(dir->d_type == DT_REG && dir->d_name[0] != '.') { //if it is a regular file
+            if(dir->d_type == DT_REG) { //if it is a regular file
                 strcpy(filename, "./");
                 strcat(filename, dir_name); strcat(filename, "/"); // filename = dir_name/
-
                 strcat(filename, dir->d_name);
+
                 __mode_t mode = parse_perms(cmd, filename);
 
-                printf("File to be inspected: %s\n", filename);
                 if(chmod(filename, mode) != 0){
                     perror("chmod");
                 }
-            } else if (dir->d_type == DT_DIR && (dir->d_name)[0] != '.'){
+            } else if (dir->d_type == DT_DIR && strcmp(dir->d_name, ".") != 0 && strcmp(dir->d_name, "..") != 0){
                 int pid;
                 if((pid = fork()) < 0){
                     perror("fork");
                     return;
                 }
                 if(pid == 0){
-                    printf("Hello there from the child\n");
                     strcpy(filename, ""); 
                     strcat(filename, dir_name); strcat(filename, "/");
                     strcat(filename, dir->d_name);
-                    printf("New dir to be inspected: %s\n", filename);
-                    chmod_dir(cmd, filename);
+                    return chmod_dir(cmd, filename);
                 } else {
-                    printf("Hello there from the parent\n");
                     wait(0);
                 }
             }
@@ -141,7 +137,6 @@ void chmod_dir(char* cmd, char* dir_name){
             exit(1);
         }
     }
-
 }
 
 int main(int argc, char* argv[]){
