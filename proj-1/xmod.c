@@ -174,8 +174,6 @@ int main(int argc, char* argv[]){
                 abort();
         }
     }
-    
-    printf("verbose = %d, recursive = %d\n", verbose, recursive);
 
     index = optind;
     char *file_name = argv[argc - 1];
@@ -185,16 +183,17 @@ int main(int argc, char* argv[]){
         perror("stat");
         exit(-1);
     }
-
-    printf("File name = %s\n", file_name);
     
     __mode_t arg_info = st.st_mode;
-        
+
     if (recursive) {
-        if ((arg_info & __S_IFDIR) != 0)
+        if ((arg_info & __S_IFDIR) != 0) {
             chmod_dir(argv[index], file_name);
-        else
+        }
+        else {
             fprintf(stderr, "Invalid option, not a directory.\n");
+            exit(-1);
+        }
     }
 
     __mode_t mode = parse_perms(argv[index], file_name);
@@ -202,5 +201,6 @@ int main(int argc, char* argv[]){
             perror("chmod");
             exit(-1);
         }
+
     return 0;
 }
