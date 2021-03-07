@@ -150,7 +150,6 @@ int main(int argc, char* argv[]){
 
     int verbose = 0;
     int recursive = 0;
-    int change_only = 0;
     int option;
     int index;
 
@@ -161,7 +160,7 @@ int main(int argc, char* argv[]){
                 verbose = 1;
                 break;
             case 'c':
-                change_only = 1;
+                verbose = 2;
                 break;
             case 'R':
                 recursive = 1;
@@ -176,31 +175,32 @@ int main(int argc, char* argv[]){
         }
     }
     
-    printf("verbose = %d, recursive = %d, change_only = %d\n", verbose, recursive, change_only);
+    printf("verbose = %d, recursive = %d\n", verbose, recursive);
 
     index = optind;
-
-    printf("argv[index] = %s\n", argv[index]);
+    char *file_name = argv[argc - 1];
 
     struct stat st;
-    if(stat(argv[index], &st) != 0) {
+    if(stat(file_name, &st) != 0) {
         perror("stat");
-        exit(1);
+        exit(-1);
     }
 
-    /*__mode_t arg_info = st.st_mode;
-    if((arg_info & __S_IFDIR) != 0){
-        chmod_dir(argv[1], argv[2]);
+    printf("File name = %s\n", file_name);
+    
+    __mode_t arg_info = st.st_mode;
+        
+    if (recursive) {
+        if ((arg_info & __S_IFDIR) != 0)
+            chmod_dir(argv[index], file_name);
+        else
+            fprintf(stderr, "Invalid option, not a directory.\n");
+    }
 
-    } else {
-        //filename points to a file
-        __mode_t mode = parse_perms(argv[1], argv[2]);
-	//printf("Im the directory: %s", argv[2]);
-        if(chmod(argv[2], mode) != 0){
+    __mode_t mode = parse_perms(argv[index], file_name);
+        if(chmod(file_name, mode) != 0){
             perror("chmod");
-            exit(1);
+            exit(-1);
         }
-    }*/
-
     return 0;
 }
