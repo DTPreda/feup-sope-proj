@@ -8,6 +8,9 @@
 
 __mode_t parse_perms(char* perms, char* filename);
 __mode_t get_perms(unsigned int r, unsigned int w, unsigned int x, char op, char target, char* filename);
+void chmod_dir(char* cmd, char* dir_name);
+char * formatOctal(char *octal);
+
 
 __mode_t parse_perms(char* perms, char* filename){
     size_t len = strlen(perms);
@@ -21,7 +24,7 @@ __mode_t parse_perms(char* perms, char* filename){
     }
 
     if(!read && !write && !execute){
-	 printf("Ganda murcao puseste isso mal ze\n");
+	 printf("Invalid input\n");
 	 exit(1);
     }
 
@@ -75,6 +78,13 @@ __mode_t get_perms(unsigned int r, unsigned int w, unsigned int x, char op, char
         }
     } else if (op == '='){
         //ret está vazio; tudo a 0
+        /*
+        struct stat stb;
+        if(stat(filename, &stb) != 0){	//get permissions
+            perror("Stat");
+        }
+        ret = stb.st_mode;
+        */
         for(int i = 0; i < 3; i++){
             for(int j = 0; j < 3; j++){
                 ret |= modes[i]*targets[j] << ((2 - i) + 3*j);
@@ -141,8 +151,54 @@ void chmod_dir(char* cmd, char* dir_name){
     }
 }
 
-int main(int argc, char* argv[]){
+/**
+ * Converts octal input to format "u=--- g=--- o=---", where "-" can be 'r' 'w' or 'x'
+ */
+char * formatOctal(char *octal){
+    char* result = (char *) malloc( 18*sizeof(char));
+    strcat(result, "u=");
+    for (int i = 1; i < strlen(octal); i++){
+        switch (octal[i]){
+        case '7':
+            strcat(result, "rwx");
+            break;
+        case '6':
+            strcat(result, "rw");
+            break;
+        case '5':
+            strcat(result, "rx");
+            break;
+        case '4':
+            strcat(result, "r");
+            break;
+        case '3':
+            strcat(result, "wx");
+            break;
+        case '2':
+            strcat(result, "w");
+            break;
+        case '1':
+            strcat(result, "x");
+            break;
+        case '0':
+            strcat(result, "");
+            break;
+        default:
+            break;
+        }
 
+        if (i == 1){
+            strcat(result, " g+");
+        }
+        else if (i == 2){
+            strcat(result, " o+");
+        }
+    }
+    return result;
+}
+
+int main(int argc, char* argv[]){
+    
     if(argc <= 2){
         fprintf(stdout, "Invalid number of arguments\n");
         exit(1);
@@ -152,7 +208,6 @@ int main(int argc, char* argv[]){
     int recursive = 0;
     int option;
     int index;
-
     while ((option = getopt(argc, argv, "vcR")) != -1)
     {
         switch (option) {
@@ -176,6 +231,11 @@ int main(int argc, char* argv[]){
     }
 
     index = optind;
+
+    char *input = argv[index];
+    
+    char *in = (char *) malloc (18 * sizeof(char));
+
     char *file_name = argv[argc - 1];
 
     struct stat st;
@@ -183,24 +243,44 @@ int main(int argc, char* argv[]){
         perror("stat");
         exit(-1);
     }
-    
+
     __mode_t arg_info = st.st_mode;
 
-    if (recursive) {
-        if ((arg_info & __S_IFDIR) != 0) {
-            chmod_dir(argv[index], file_name);
-        }
-        else {
-            fprintf(stderr, "Invalid option, not a directory.\n");
-            exit(-1);
+    if (argv[index][0] == '0'){  //get input 
+        in = formatOctal(argv[index]);
+    }
+    else{
+        for (int i = index; i < argc - 1; i++){ //get all inputs u=rwx g=rx o=wx
+            strcat(in, argv[i]);
+            strcat(in, " ");
+            //printf("String: %s\n", in);
         }
     }
+    printf("String: %s\n", in);
+    
+    char * newInput= strtok(in, " ");   //split the string through the space
+    // loop through the string to extract all other tokens
+    while( newInput != NULL ) {
+        printf("Input: %s\n", newInput);
 
-    __mode_t mode = parse_perms(argv[index], file_name);
+        if (recursive) {
+            if ((arg_info & __S_IFDIR) != 0) {
+                chmod_dir(newInput, file_name);
+            }
+            else {
+                fprintf(stderr, "Invalid option, not a directory.\n");
+                exit(-1);
+            }
+        }
+
+        __mode_t mode = parse_perms(newInput, file_name);
         if(chmod(file_name, mode) != 0){
             perror("chmod");
             exit(-1);
         }
+
+        newInput = strtok(NULL, " ");
+    }
 
     return 0;
 }
