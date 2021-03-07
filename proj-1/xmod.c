@@ -77,14 +77,17 @@ __mode_t get_perms(unsigned int r, unsigned int w, unsigned int x, char op, char
             }
         }
     } else if (op == '='){
-        //ret está vazio; tudo a 0
-        /*
         struct stat stb;
         if(stat(filename, &stb) != 0){	//get permissions
             perror("Stat");
         }
         ret = stb.st_mode;
-        */
+        // zeroes all target permissions before adding
+        for(int i = 0; i < 3; i++){
+            for(int j = 0; j < 3; j++){
+                ret &= ~(targets[j] << (((2 - i) + 3*j)));
+            }
+        }
         for(int i = 0; i < 3; i++){
             for(int j = 0; j < 3; j++){
                 ret |= modes[i]*targets[j] << ((2 - i) + 3*j);
