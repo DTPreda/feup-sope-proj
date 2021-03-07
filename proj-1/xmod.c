@@ -3,6 +3,8 @@
 #include <sys/stat.h>
 #include <dirent.h>
 #include <string.h>
+#include <unistd.h>
+#include <ctype.h>
 
 __mode_t parse_perms(char* perms, char* filename);
 __mode_t get_perms(unsigned int r, unsigned int w, unsigned int x, char op, char target, char* filename);
@@ -140,18 +142,53 @@ void chmod_dir(char* cmd, char* dir_name){
 }
 
 int main(int argc, char* argv[]){
+
     if(argc <= 2){
-        fprintf(stdout, "Invalid number of arguments");
+        fprintf(stdout, "Invalid number of arguments\n");
         exit(1);
     }
 
+    int verbose = 0;
+    int recursive = 0;
+    int change_only = 0;
+    int option;
+    int index;
+
+    while ((option = getopt(argc, argv, "vcR")) != -1)
+    {
+        switch (option) {
+            case 'v':
+                verbose = 1;
+                break;
+            case 'c':
+                change_only = 1;
+                break;
+            case 'R':
+                recursive = 1;
+                break;
+            case '?':
+                if (isprint(optopt)) {
+                    fprintf(stderr, "Unknown option '-%c'.\n", optopt);
+                    exit(-1);
+                }
+            default:
+                abort();
+        }
+    }
+    
+    printf("verbose = %d, recursive = %d, change_only = %d\n", verbose, recursive, change_only);
+
+    index = optind;
+
+    printf("argv[index] = %s\n", argv[index]);
+
     struct stat st;
-    if(stat(argv[2], &st) != 0) {
+    if(stat(argv[index], &st) != 0) {
         perror("stat");
         exit(1);
     }
 
-    __mode_t arg_info = st.st_mode;
+    /*__mode_t arg_info = st.st_mode;
     if((arg_info & __S_IFDIR) != 0){
         chmod_dir(argv[1], argv[2]);
 
@@ -163,7 +200,7 @@ int main(int argc, char* argv[]){
             perror("chmod");
             exit(1);
         }
-    }
+    }*/
 
     return 0;
 }
