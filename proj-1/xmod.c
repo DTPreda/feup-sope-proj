@@ -65,16 +65,11 @@ __mode_t parse_perms(char* perms, char* filename, int verbosity){
             ret |= get_perms(read, write, execute, mode, target, filename);
         }
         else if(mode == '='){
-            ret &= get_perms(1, 1, 1, '+', 'a', filename) & ~(get_perms(1, 1, 1, '+', target, filename));
+            ret &= ~(get_perms(1, 1, 1, '+', target, filename));
             ret |= get_perms(read, write, execute, '+', target, filename);
         } else {
             ret &= get_perms(read, write, execute, mode, target, filename);
         }
-
-        // user  group other
-        // 0 1 0 1 1 1 0 1 0 -> permissões atuais
-        // 0 1 0 0 1 0 0 1 0 -> ret
-        // 0 1 0 
 
         input = strtok(NULL, " ");
     }
