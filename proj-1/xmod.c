@@ -10,6 +10,7 @@ __mode_t parse_perms(char* perms, char* filename, int verbosity);
 __mode_t get_perms(unsigned int r, unsigned int w, unsigned int x, char op, char target, char* filename, int verbosity);
 void chmod_dir(char* cmd, char* dir_name, int verbosity);
 char * formatOctal(char *octal);
+void strmode(mode_t mode, char * buf);
 
 
 __mode_t parse_perms(char* perms, char* filename, int verbosity){
@@ -100,10 +101,16 @@ __mode_t get_perms(unsigned int r, unsigned int w, unsigned int x, char op, char
         }
     }
 
+    char oldMode[15]; 
+    char newMode[15];
+    strmode(old, oldMode);
+    strmode(ret, newMode);
+
     if (ret == old && verbosity == 1)
-        printf("mode of '%s' retained as 0%o\n", filename, ret % 512);
+        printf("mode of '%s' retained as 0%o(%s)\n", filename, ret % 512, oldMode);
+
     if (ret != old && verbosity)
-        printf("mode of '%s' changed from 0%o to 0%o\n", filename, old % 512, ret % 512);
+        printf("mode of '%s' changed from 0%o(%s) to 0%o(%s)\n", filename, old % 512, oldMode, ret % 512, newMode);
 
     return ret;
 }
@@ -140,6 +147,9 @@ void chmod_dir(char* cmd, char* dir_name, int verbosity){
                 } else {
                     wait(0);
                 }
+            }
+            else if ( dir->d_type == DT_LNK ){
+                //chamar para o que esta escrito no ficheiro
             }
         }
 
@@ -196,6 +206,18 @@ char * formatOctal(char *octal){
     }
     return result;
 }
+
+/**
+ * Converts the mode of permissions to format rwxrwxrwx
+ */
+void strmode(mode_t mode, char * buf) {
+  const char chars[] = "rwxrwxrwx";
+  for (size_t i = 0; i < 9; i++) {
+    buf[i] = (mode & (1 << (8-i))) ? chars[i] : '-';
+  }
+  buf[9] = '\0';
+}
+
 
 int main(int argc, char* argv[]){
     
