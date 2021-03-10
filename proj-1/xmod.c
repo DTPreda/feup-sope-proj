@@ -188,10 +188,10 @@ char * formatOctal(char *octal){
         }
 
         if (i == 1){
-            strcat(result, " g+");
+            strcat(result, " g=");
         }
         else if (i == 2){
-            strcat(result, " o+");
+            strcat(result, " o=");
         }
     }
     return result;
