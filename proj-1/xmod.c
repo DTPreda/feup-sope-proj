@@ -101,9 +101,9 @@ __mode_t get_perms(unsigned int r, unsigned int w, unsigned int x, char op, char
     }
 
     if (ret == old && verbosity == 1)
-        printf("No changes were made to the file!\n");
+        printf("mode of '%s' retained as 0%o\n", filename, ret % 512);
     if (ret != old && verbosity)
-        printf("File was changed from %o to %o\n", old, ret);
+        printf("mode of '%s' changed from 0%o to 0%o\n", filename, old % 512, ret % 512);
 
     return ret;
 }
