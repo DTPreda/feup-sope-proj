@@ -107,10 +107,10 @@ __mode_t get_perms(unsigned int r, unsigned int w, unsigned int x, char op, char
     strmode(ret, newMode);
 
     if (ret == old && verbosity == 1)
-        printf("mode of '%s' retained as 0%o(%s)\n", filename, ret % 512, oldMode);
+        printf("mode of '%s' retained as 0%o (%s)\n", filename, ret % 512, oldMode);
 
     if (ret != old && verbosity)
-        printf("mode of '%s' changed from 0%o(%s) to 0%o(%s)\n", filename, old % 512, oldMode, ret % 512, newMode);
+        printf("mode of '%s' changed from 0%o (%s) to 0%o (%s)\n", filename, old % 512, oldMode, ret % 512, newMode);
 
     return ret;
 }
@@ -152,12 +152,12 @@ void chmod_dir(char* cmd, char* dir_name, int verbosity){
                 //chamar para o que esta escrito no ficheiro
             }
         }
-
+        /*
         __mode_t mode = parse_perms(cmd, dir_name, verbosity);
         if(chmod(dir_name, mode) != 0){
             perror("chmod");
             exit(1);
-        }
+        }*/
     }
 }
 
