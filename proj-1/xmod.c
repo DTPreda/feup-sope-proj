@@ -127,19 +127,21 @@ __mode_t get_perms(unsigned int r, unsigned int w, unsigned int x, char op, char
 
 void chmod_dir(char* cmd, char* dir_name, int verbosity){
     //filename points to a dir
+    char copy[100];
     char filename[100];
     DIR* d;
     struct dirent *dir;
     d = opendir(dir_name);
     if(d) {
         while((dir = readdir(d)) != NULL){
+            strcpy(copy, cmd);
             if(dir->d_type == DT_REG) { //if it is a regular file
                 strcpy(filename, "./");
                 strcat(filename, dir_name); strcat(filename, "/"); // filename = dir_name/
                 strcat(filename, dir->d_name);
 
-                __mode_t mode = parse_perms(cmd, filename, verbosity);
-
+                __mode_t mode = parse_perms(copy, filename, verbosity);
+                
                 if(chmod(filename, mode) != 0){
                     perror("chmod");
                 }
@@ -153,7 +155,7 @@ void chmod_dir(char* cmd, char* dir_name, int verbosity){
                     strcpy(filename, ""); 
                     strcat(filename, dir_name); strcat(filename, "/");
                     strcat(filename, dir->d_name);
-                    return chmod_dir(cmd, filename, verbosity);
+                    return chmod_dir(copy, filename, verbosity);
                 } else {
                     wait(0);
                 }
@@ -162,12 +164,12 @@ void chmod_dir(char* cmd, char* dir_name, int verbosity){
                 //chamar para o que esta escrito no ficheiro
             }
         }
-        /*
+        
         __mode_t mode = parse_perms(cmd, dir_name, verbosity);
         if(chmod(dir_name, mode) != 0){
             perror("chmod");
             exit(1);
-        }*/
+        }
     }
 }
 
@@ -292,6 +294,7 @@ int main(int argc, char* argv[]){
     if (recursive) {
         if ((arg_info & __S_IFDIR) != 0) {
             chmod_dir(in, file_name, verbose);
+            return 0;
         }
         else {
             fprintf(stderr, "Invalid option, not a directory.\n");
