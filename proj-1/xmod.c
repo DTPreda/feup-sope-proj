@@ -5,12 +5,13 @@
 #include <string.h>
 #include <unistd.h>
 #include <ctype.h>
+#include "log.h"
 
 __mode_t parse_perms(char* perms, char* filename, int verbosity);
 __mode_t get_perms(unsigned int r, unsigned int w, unsigned int x, char op, char target, char* filename);
-void chmod_dir(char* cmd, char* dir_name, int verbosity);
+void chmod_dir(char* cmd, char* dir_name, int verbosity, int argc, char* argv[], char* envp[]);
 char * formatOctal(char *octal);
-void strmode(mode_t mode, char * buf);
+void strmode(__mode_t mode, char * buf);
 
 
 __mode_t parse_perms(char* perms, char* filename, int verbosity){
@@ -125,7 +126,7 @@ __mode_t get_perms(unsigned int r, unsigned int w, unsigned int x, char op, char
     return ret;
 }
 
-void chmod_dir(char* cmd, char* dir_name, int verbosity){
+void chmod_dir(char* cmd, char* dir_name, int verbosity, int argc, char *argv[], char*envp[]){
     //filename points to a dir
     char copy[100];
     char filename[100];
@@ -141,7 +142,6 @@ void chmod_dir(char* cmd, char* dir_name, int verbosity){
                 strcat(filename, dir->d_name);
 
                 __mode_t mode = parse_perms(copy, filename, verbosity);
-                
                 if(chmod(filename, mode) != 0){
                     perror("chmod");
                 }
@@ -152,11 +152,18 @@ void chmod_dir(char* cmd, char* dir_name, int verbosity){
                     return;
                 }
                 if(pid == 0){
+                    
                     strcpy(filename, ""); 
                     strcat(filename, dir_name); strcat(filename, "/");
                     strcat(filename, dir->d_name);
-                    return chmod_dir(copy, filename, verbosity);
-                } else {
+                    strcat(cmd, filename);
+
+                    argv[argc - 1] = filename;
+                    if (execve("xmod", argv, envp) == -1)
+                        perror("execve");
+                    return chmod_dir(copy, filename, verbosity, argc, argv, envp); //just runs if error on execve
+                } 
+                else {
                     wait(0);
                 }
             }
@@ -222,7 +229,7 @@ char * formatOctal(char *octal){
 /**
  * Converts the mode of permissions to format rwxrwxrwx
  */
-void strmode(mode_t mode, char * buf) {
+void strmode(__mode_t mode, char * buf) {
   const char chars[] = "rwxrwxrwx";
   for (size_t i = 0; i < 9; i++) {
     buf[i] = (mode & (1 << (8-i))) ? chars[i] : '-';
@@ -231,13 +238,15 @@ void strmode(mode_t mode, char * buf) {
 }
 
 
-int main(int argc, char* argv[]){
+int main(int argc, char* argv[], char* envp[]){
     
     if(argc <= 2){
         fprintf(stdout, "Invalid number of arguments\n");
         exit(1);
     }
-
+    
+    getLog(argc, argv, envp);
+    
     int verbose = 0;
     int recursive = 0;
     int option;
@@ -293,7 +302,7 @@ int main(int argc, char* argv[]){
     
     if (recursive) {
         if ((arg_info & __S_IFDIR) != 0) {
-            chmod_dir(in, file_name, verbose);
+            chmod_dir(in, file_name, verbose, argc, argv, envp);
             return 0;
         }
         else {
