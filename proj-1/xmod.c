@@ -7,54 +7,13 @@
 #include <ctype.h>
 
 __mode_t parse_perms(char* perms, char* filename, int verbosity);
-__mode_t get_perms(unsigned int r, unsigned int w, unsigned int x, char op, char target, char* filename, int verbosity);
+__mode_t get_perms(unsigned int r, unsigned int w, unsigned int x, char op, char target, char* filename);
 void chmod_dir(char* cmd, char* dir_name, int verbosity);
 char * formatOctal(char *octal);
 void strmode(mode_t mode, char * buf);
 
 
 __mode_t parse_perms(char* perms, char* filename, int verbosity){
-    size_t len = strlen(perms);
-    char target = 'a';
-    char mode;
-    unsigned int read = 0, write = 0, execute = 0;
-    for(int i = len - 1; perms[i] != '+' && perms[i] != '-' && perms[i] != '=' && i > 0; i--){
-        if(perms[i] == 'r') read = 1;
-        if(perms[i] == 'w') write = 1;
-        if(perms[i] == 'x') execute = 1;
-    }
-
-    if(!read && !write && !execute){
-	 fprintf(stderr, "Invalid input\n");
-	 exit(-1);
-    }
-
-    switch (perms[0]){
-        case 'u':
-            target = 'u';
-            mode = perms[1];
-            break;
-        case 'g':
-            target = 'g';
-            mode = perms[1];
-            break;
-        case 'o':
-            target = 'o';
-            mode = perms[1];
-            break;
-        case 'a':
-            mode = perms[1];
-            break;
-        default:
-            mode = perms[0];
-            break;
-    }
-
-    return get_perms(read, write, execute, mode, target, filename, verbosity);
-}
-
-
-__mode_t get_perms(unsigned int r, unsigned int w, unsigned int x, char op, char target, char* filename, int verbosity){
     __mode_t ret = 0;
     __mode_t old = 0; //to check if any change was made to the mode
     struct stat stb;
@@ -63,6 +22,80 @@ __mode_t get_perms(unsigned int r, unsigned int w, unsigned int x, char op, char
     }
     ret = stb.st_mode;
     old = stb.st_mode;
+
+    char* input = strtok(perms, " ");
+    for( ; input != NULL; ){
+        size_t len = strlen(input);
+        char target = 'a';
+        char mode;
+        unsigned int read = 0, write = 0, execute = 0;
+        for(int i = len - 1; input[i] != '+' && input[i] != '-' && input[i] != '=' && i > 0; i--){
+            if(input[i] == 'r') read = 1;
+            if(input[i] == 'w') write = 1;
+            if(input[i] == 'x') execute = 1;
+        }
+
+        if(!read && !write && !execute){
+            fprintf(stderr, "Invalid input\n");
+            exit(-1);
+        }
+
+        switch (input[0]){
+            case 'u':
+                target = 'u';
+                mode = input[1];
+                break;
+            case 'g':
+                target = 'g';
+                mode = input[1];
+                break;
+            case 'o':
+                target = 'o';
+                mode = perms[1];
+                break;
+            case 'a':
+                mode = perms[1];
+                break;
+            default:
+                mode = perms[0];
+                break;
+        }
+
+        if(mode == '+'){
+            ret |= get_perms(read, write, execute, mode, target, filename);
+        }
+        else if(mode == '='){
+            ret &= get_perms(1, 1, 1, '+', 'a', filename) & ~(get_perms(1, 1, 1, '+', target, filename));
+            ret |= get_perms(read, write, execute, '+', target, filename);
+        } else {
+            ret &= get_perms(read, write, execute, mode, target, filename);
+        }
+
+        // user  group other
+        // 0 1 0 1 1 1 0 1 0 -> permissões atuais
+        // 0 1 0 0 1 0 0 1 0 -> ret
+        // 0 1 0 
+
+        input = strtok(NULL, " ");
+    }
+
+
+    char oldMode[15]; 
+    char newMode[15];
+    strmode(old, oldMode);
+    strmode(ret, newMode);
+
+    if (ret == old && verbosity == 1)
+        printf("mode of '%s' retained as 0%o (%s)\n", filename, ret % 512, oldMode);
+
+    if (ret != old && verbosity)
+        printf("mode of '%s' changed from 0%o (%s) to 0%o (%s)\n", filename, old % 512, oldMode, ret % 512, newMode);
+
+    return ret;
+}
+
+__mode_t get_perms(unsigned int r, unsigned int w, unsigned int x, char op, char target, char* filename){
+    __mode_t ret = 0;
 
     unsigned int modes[3] = {r, w, x};
     unsigned int targets[3] = {0, 0, 0};
@@ -80,38 +113,20 @@ __mode_t get_perms(unsigned int r, unsigned int w, unsigned int x, char op, char
                 ret |= modes[i]*targets[j] << ((2 - i) + 3*j);
             }
         }
-    } else if (op == '='){
-        // zeroes all target permissions before adding
-        for(int i = 0; i < 3; i++){
-            for(int j = 0; j < 3; j++){
-                ret &= ~(targets[j] << (((2 - i) + 3*j)));
-            }
-        }
-        for(int i = 0; i < 3; i++){
-            for(int j = 0; j < 3; j++){
-                ret |= modes[i]*targets[j] << ((2 - i) + 3*j);
-            }
-        }
-    } else if (op == '-'){
+    }
+    else if (op == '-'){
         //ret = permissões do ficheiro
+        struct stat stb;
+        if(stat(filename, &stb) != 0){	//get permissions
+            perror("Stat");
+        }
+        ret = stb.st_mode;
         for(int i = 0; i < 3; i++){
             for(int j = 0; j < 3; j++){
                 ret &= ~(modes[i]*targets[j] << (((2 - i) + 3*j)));
             }
         }
     }
-
-    char oldMode[15]; 
-    char newMode[15];
-    strmode(old, oldMode);
-    strmode(ret, newMode);
-
-    if (ret == old && verbosity == 1)
-        printf("mode of '%s' retained as 0%o (%s)\n", filename, ret % 512, oldMode);
-
-    if (ret != old && verbosity)
-        printf("mode of '%s' changed from 0%o (%s) to 0%o (%s)\n", filename, old % 512, oldMode, ret % 512, newMode);
-
     return ret;
 }
 
@@ -279,26 +294,20 @@ int main(int argc, char* argv[]){
         }
     }
     
-    char * newInput= strtok(in, " ");   //split the string through the space
-    // loop through the string to extract all other tokens
-    while( newInput != NULL ) {
-        if (recursive) {
-            if ((arg_info & __S_IFDIR) != 0) {
-                chmod_dir(newInput, file_name, verbose);
-            }
-            else {
-                fprintf(stderr, "Invalid option, not a directory.\n");
-                exit(-1);
-            }
+    if (recursive) {
+        if ((arg_info & __S_IFDIR) != 0) {
+            chmod_dir(in, file_name, verbose);
         }
-
-        __mode_t mode = parse_perms(newInput, file_name, verbose);
-        if(chmod(file_name, mode) != 0){
-            perror("chmod");
+        else {
+            fprintf(stderr, "Invalid option, not a directory.\n");
             exit(-1);
         }
+    }
 
-        newInput = strtok(NULL, " ");
+    __mode_t mode = parse_perms(in, file_name, verbose);
+    if(chmod(file_name, mode) != 0){
+        perror("chmod");
+        exit(-1);
     }
 
     return 0;
