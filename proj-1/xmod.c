@@ -134,6 +134,12 @@ void chmod_dir(char* cmd, char* dir_name, int verbosity, int argc, char *argv[],
     struct dirent *dir;
     d = opendir(dir_name);
     if(d) {
+        __mode_t mode = parse_perms(cmd, dir_name, verbosity);
+        if(chmod(dir_name, mode) != 0){
+            perror("chmod");
+            exit(1);
+        }
+        
         while((dir = readdir(d)) != NULL){
             strcpy(copy, cmd);
             if(dir->d_type == DT_REG) { //if it is a regular file
@@ -172,11 +178,6 @@ void chmod_dir(char* cmd, char* dir_name, int verbosity, int argc, char *argv[],
             }
         }
         
-        __mode_t mode = parse_perms(cmd, dir_name, verbosity);
-        if(chmod(dir_name, mode) != 0){
-            perror("chmod");
-            exit(1);
-        }
     }
 }
 
@@ -245,7 +246,7 @@ int main(int argc, char* argv[], char* envp[]){
         exit(1);
     }
     
-    getLog(argc, argv, envp);
+    //getLog(argc, argv, envp);
     
     int verbose = 0;
     int recursive = 0;
