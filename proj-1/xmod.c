@@ -139,11 +139,11 @@ void chmod_dir(char* cmd, char* dir_name, int verbosity, int argc, char *argv[],
             perror("chmod");
             exit(1);
         }
-        
+
         while((dir = readdir(d)) != NULL){
             strcpy(copy, cmd);
-            if(dir->d_type == DT_REG) { //if it is a regular file
-                strcpy(filename, "./");
+            if(dir->d_type == DT_REG || dir->d_type == DT_LNK) { //if it is a regular file
+                strcpy(filename, "");
                 strcat(filename, dir_name); strcat(filename, "/"); // filename = dir_name/
                 strcat(filename, dir->d_name);
 
@@ -173,9 +173,23 @@ void chmod_dir(char* cmd, char* dir_name, int verbosity, int argc, char *argv[],
                     wait(0);
                 }
             }
+            /*
             else if ( dir->d_type == DT_LNK ){
                 //chamar para o que esta escrito no ficheiro
-            }
+                char buf[1024];
+                ssize_t nchars = readlink (filename, buf, sizeof(buf) - 1);
+                if (nchars != -1){
+                    buf[nchars] = '\0';
+                    strcpy(filename, "");
+                    strcat(filename, dir_name); strcat(filename, "/");
+                    strcat(filename, buf);
+                    strcat(cmd, filename);
+                    fprintf(stdout, "FILENAME: %s\n", filename);
+                }
+                else{
+                    perror("readLink");
+                }
+            }*/
         }
         
     }
