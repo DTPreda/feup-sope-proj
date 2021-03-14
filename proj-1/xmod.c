@@ -58,7 +58,7 @@ double getRunningTime() {
     //sleep(1);
     clock_gettime(CLOCK_MONOTONIC_RAW, &end);
     double delta_ms = (double)((end.tv_sec - start.tv_sec) * 1000000 + (end.tv_nsec - start.tv_nsec) / 1000)/1000;
-    fprintf(stdout, "Elapsed time(ms): %f", delta_ms);
+    fprintf(stdout, "Elapsed time(ms): %f\n", delta_ms);
     return delta_ms;
 }
 
@@ -296,46 +296,39 @@ void strmode(__mode_t mode, char * buf) {
   buf[9] = '\0';
 }
 
-
-int main(int argc, char* argv[], char* envp[]){
-    
-    clock_gettime(CLOCK_MONOTONIC_RAW, &start);
-
-
-    if(argc <= 2){
-        fprintf(stdout, "Invalid number of arguments\n");
-        exit(1);
-    }
-    /*
+int set_handlers(){
     if (signal(SIGINT, sig_handler) == SIG_ERR) {
         perror("signal");
-        exit(-1);
-    }*/
+        return 1;
+    }
 
     if (signal(SIGUSR1, sig_handler) == SIG_ERR) {
         perror("signal");
-        exit(-1);
+        return 1;
     }
 
     if (signal(SIGUSR2, sig_handler) == SIG_ERR) {
         perror("signal");
-        exit(-1);
+        return 1;
     }
-    int verbose = 0;
-    int recursive = 0;
+
+    return 0;
+}
+
+
+void get_options(int* verbose, int* recursive, int* index, int argc, char* argv[]){
     int option;
-    int index;
     while ((option = getopt(argc, argv, "vcR")) != -1)
     {
         switch (option) {
             case 'v':
-                verbose = 1;
+                *verbose = 1;
                 break;
             case 'c':
-                verbose = 2;
+                *verbose = 2;
                 break;
             case 'R':
-                recursive = 1;
+                *recursive = 1;
                 break;
             case '?':
                 if (isprint(optopt)) {
@@ -347,22 +340,10 @@ int main(int argc, char* argv[], char* envp[]){
         }
     }
 
-    index = optind;
+    *index = optind;
+}
 
-    char *input = argv[index];
-    
-    char *in = (char *) malloc (18 * sizeof(char));
-
-    char *file_name = argv[argc - 1];
-
-    struct stat st;
-    if(stat(file_name, &st) != 0) {
-        perror("stat");
-        exit(-1);
-    }
-
-    __mode_t arg_info = st.st_mode;
-
+void get_input(char* input, char* in, char* file_name, int index, int argc, char* argv[]){
     if (input[0] == '0'){  //get input 
         in = formatOctal(input);
     } else {
@@ -372,21 +353,58 @@ int main(int argc, char* argv[], char* envp[]){
             //printf("String: %s\n", in);
         }
     }
-    
+}
+
+int run_xmod(char* in, char* file_name, int verbose, int recursive, int argc, char* argv[], char* envp[]){
+    struct stat st;
+    if(stat(file_name, &st) != 0) {
+        perror("stat");
+        return 1;
+    }
+
+    __mode_t arg_info = st.st_mode;
+
     if (recursive) {
         if ((arg_info & __S_IFDIR) != 0) {
             chmod_dir(in, file_name, verbose, argc, argv, envp);
             return 0;
         } else {
             fprintf(stderr, "Invalid option, not a directory.\n");
-            exit(-1);
+            return 1;
         }
+    } else {
+        __mode_t mode = parse_perms(in, file_name, verbose);
+        if(chmod(file_name, mode) != 0){
+            perror("chmod");
+            return 1;
+        }
+        return 0;
+    }
+}
+
+int main(int argc, char* argv[], char* envp[]){
+    
+    clock_gettime(CLOCK_MONOTONIC_RAW, &start);
+
+    if(argc <= 2){
+        fprintf(stdout, "Invalid number of arguments\n");
+        return 1;
     }
 
-    __mode_t mode = parse_perms(in, file_name, verbose);
-    if(chmod(file_name, mode) != 0){
-        perror("chmod");
-        exit(-1);
+    if(set_handlers()){
+        return 1;
+    }
+    
+    int verbose, recursive, index;
+    get_options(&verbose, &recursive, &index, argc, argv);
+    
+    char *input = argv[index];
+    char *in = (char *) malloc (18 * sizeof(char));
+    char *file_name = argv[argc - 1];
+    get_input(input, in, file_name, index, argc, argv);
+
+    if(run_xmod(in, file_name, verbose, recursive, argc, argv, envp) != 0){
+        return 1;
     }
     
     double value = getRunningTime();
