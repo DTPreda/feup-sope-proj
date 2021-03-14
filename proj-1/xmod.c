@@ -12,7 +12,10 @@
 
 struct timespec start, end;
 static char* log_file;
+unsigned int nftot = 0;
+unsigned int nfmod = 0;
 
+int xmod(char* in, char* file_name, int verbosity);
 __mode_t parse_perms(char* perms, char* filename, int verbosity);
 __mode_t get_perms(unsigned int r, unsigned int w, unsigned int x, char op, char target, char* filename);
 void chmod_dir(char* cmd, char* dir_name, int verbosity, int argc, char* argv[], char* envp[]);
@@ -213,9 +216,7 @@ void chmod_dir(char* cmd, char* dir_name, int verbosity, int argc, char *argv[],
     struct dirent *dir;
     d = opendir(dir_name);
     if(d) {
-
-        __mode_t mode = parse_perms(cmd, dir_name, verbosity);
-        if(chmod(dir_name, mode) != 0){
+        if(xmod(cmd, dir_name, verbosity) != 0){
             perror("chmod");
             exit(1);
         }
@@ -227,8 +228,7 @@ void chmod_dir(char* cmd, char* dir_name, int verbosity, int argc, char *argv[],
                 strcat(filename, dir_name); strcat(filename, "/"); // filename = dir_name/
                 strcat(filename, dir->d_name);
 
-                __mode_t mode = parse_perms(copy, filename, verbosity);
-                if(chmod(filename, mode) != 0){
+                if(xmod(cmd, filename, verbosity) != 0){
                     perror("chmod");
                 }
             } else if (dir->d_type == DT_DIR && strcmp(dir->d_name, ".") != 0 && strcmp(dir->d_name, "..") != 0){
@@ -242,7 +242,6 @@ void chmod_dir(char* cmd, char* dir_name, int verbosity, int argc, char *argv[],
                     strcpy(filename, ""); 
                     strcat(filename, dir_name); strcat(filename, "/");
                     strcat(filename, dir->d_name);
-                    strcat(cmd, filename);
 
                     argv[argc - 1] = filename;
                     if (execve("xmod", argv, envp) == -1)
@@ -371,9 +370,18 @@ void get_input(char* input, char* in, char* file_name, int index, int argc, char
     }
 }
 
-int run_xmod(char* in, char* file_name, int verbose, int recursive, int argc, char* argv[], char* envp[]){
+int xmod(char* in, char* filename, int verbosity){
+    __mode_t mode = parse_perms(in, filename, verbosity);
+        if(chmod(filename, mode) != 0){
+            perror("chmod");
+            return 1;
+        }
+    return 0;
+}
+
+int run_xmod(char* in, char* filename, int verbosity, int recursive, int argc, char* argv[], char* envp[]){
     struct stat st;
-    if(stat(file_name, &st) != 0) {
+    if(stat(filename, &st) != 0) {
         perror("stat");
         return 1;
     }
@@ -382,18 +390,19 @@ int run_xmod(char* in, char* file_name, int verbose, int recursive, int argc, ch
 
     if (recursive) {
         if ((arg_info & __S_IFDIR) != 0) {
-            chmod_dir(in, file_name, verbose, argc, argv, envp);
+            chmod_dir(in, filename, verbosity, argc, argv, envp);
             return 0;
         } else {
             fprintf(stderr, "Invalid option, not a directory.\n");
             return 1;
         }
     } else {
-        __mode_t mode = parse_perms(in, file_name, verbose);
-        if(chmod(file_name, mode) != 0){
+        nftot += 1;
+        if(xmod(in, filename, verbosity) != 0){
             perror("chmod");
             return 1;
         }
+        nfmod += 1;
         return 0;
     }
 }
@@ -414,20 +423,18 @@ int main(int argc, char* argv[], char* envp[]){
     log_file = getenv("LOG_FILENAME");
     write_to_log(0, "argv");
     
-    int verbose, recursive, index;
-    get_options(&verbose, &recursive, &index, argc, argv);
+    int verbosity, recursive, index;
+    get_options(&verbosity, &recursive, &index, argc, argv);
     
     char *input = argv[index];
     char *in = (char *) malloc (18 * sizeof(char));
-    char *file_name = argv[argc - 1];
-    get_input(input, in, file_name, index, argc, argv);
+    char *filename = argv[argc - 1];
+    get_input(input, in, filename, index, argc, argv);
 
-    if(run_xmod(in, file_name, verbose, recursive, argc, argv, envp) != 0){
+    if(run_xmod(in, filename, verbosity, recursive, argc, argv, envp) != 0){
         return 1;
     }
     
-    double value = getRunningTime();
-    write_to_log(1, "0");
     return 0;
 }
 
