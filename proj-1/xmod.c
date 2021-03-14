@@ -17,6 +17,7 @@ __mode_t get_perms(unsigned int r, unsigned int w, unsigned int x, char op, char
 void chmod_dir(char* cmd, char* dir_name, int verbosity, int argc, char* argv[], char* envp[]);
 char * formatOctal(char *octal);
 void strmode(__mode_t mode, char * buf);
+void sig_handler(int signo);
 double getRunningTime();
 
 /**
@@ -30,6 +31,13 @@ double getRunningTime(){
     return delta_ms;
 }
 
+void sig_handler(int signo) {
+    if (signo == SIGINT)
+    {
+        
+    }
+    
+}
 
 __mode_t parse_perms(char* perms, char* filename, int verbosity){
     __mode_t ret = 0;
