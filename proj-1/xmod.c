@@ -12,9 +12,9 @@
 
 struct timespec start, end;
 
-__mode_t parse_perms(char* perms, char* filename, int verbosity);
+__mode_t parse_perms(char* perms, char* filename, int verbosity, int log, FILE* fd);
 __mode_t get_perms(unsigned int r, unsigned int w, unsigned int x, char op, char target, char* filename);
-void chmod_dir(char* cmd, char* dir_name, int verbosity, int argc, char* argv[], char* envp[]);
+void chmod_dir(char* cmd, char* dir_name, int verbosity, int log, FILE* fd, int argc, char* argv[], char* envp[]);
 char * formatOctal(char *octal);
 void strmode(__mode_t mode, char * buf);
 void sig_handler(int signo);
@@ -27,19 +27,33 @@ double getRunningTime();
 double getRunningTime(){
     clock_gettime(CLOCK_MONOTONIC_RAW, &end);
     double delta_ms = (double)((end.tv_sec - start.tv_sec) * 1000000 + (end.tv_nsec - start.tv_nsec) / 1000)/1000;
-    fprintf(stdout, "Elapsed time(ms): %f", delta_ms);
     return delta_ms;
 }
 
 void sig_handler(int signo) {
     if (signo == SIGINT)
     {
-        
+        int option;
+        fprintf(stdout,"\nSIGINT RECEIVED. I am the process with a PID of %d\n", getpid());
+        printf("Would you wish to proceed? [Y/N] ");
+        option = getchar();
+        switch (option)
+        {
+        case 'Y':
+        case 'y':
+            fprintf(stdout, "Resuming process \n");
+            break;
+        case 'N':
+        case 'n':
+            exit(2);
+        default:
+            fprintf(stdout, "Unknown option, aborting program\n");
+            exit(-1);
+        }
     }
-    
 }
 
-__mode_t parse_perms(char* perms, char* filename, int verbosity){
+__mode_t parse_perms(char* perms, char* filename, int verbosity, int log, FILE* fd){
     __mode_t ret = 0;
     __mode_t old = 0; //to check if any change was made to the mode
     struct stat stb;
@@ -108,9 +122,13 @@ __mode_t parse_perms(char* perms, char* filename, int verbosity){
     if (ret == old && verbosity == 1)
         printf("mode of '%s' retained as 0%o (%s)\n", filename, ret % 512, oldMode);
 
-    if (ret != old && verbosity)
-        printf("mode of '%s' changed from 0%o (%s) to 0%o (%s)\n", filename, old % 512, oldMode, ret % 512, newMode);
-
+    if (ret != old) {
+        char str[100];
+        sprintf(str, "%f ; %d ; FILE_MODF ; %s : %u : %u\n", getRunningTime(), getpid(), filename, old, ret);
+        fputs(str, fd);
+        if (verbosity)
+            printf("mode of '%s' changed from 0%o (%s) to 0%o (%s)\n", filename, old % 512, oldMode, ret % 512, newMode);
+    }
     return ret;
 }
 
@@ -149,7 +167,7 @@ __mode_t get_perms(unsigned int r, unsigned int w, unsigned int x, char op, char
     return ret;
 }
 
-void chmod_dir(char* cmd, char* dir_name, int verbosity, int argc, char *argv[], char*envp[]){
+void chmod_dir(char* cmd, char* dir_name, int verbosity, int log, FILE* fd, int argc, char *argv[], char*envp[]){
     //filename points to a dir
     char copy[100];
     char filename[100];
@@ -158,7 +176,7 @@ void chmod_dir(char* cmd, char* dir_name, int verbosity, int argc, char *argv[],
     d = opendir(dir_name);
     if(d) {
 
-        __mode_t mode = parse_perms(cmd, dir_name, verbosity);
+        __mode_t mode = parse_perms(cmd, dir_name, verbosity, log, fd);
         if(chmod(dir_name, mode) != 0){
             perror("chmod");
             exit(1);
@@ -172,7 +190,7 @@ void chmod_dir(char* cmd, char* dir_name, int verbosity, int argc, char *argv[],
                 strcat(filename, dir_name); strcat(filename, "/"); // filename = dir_name/
                 strcat(filename, dir->d_name);
 
-                __mode_t mode = parse_perms(copy, filename, verbosity);
+                __mode_t mode = parse_perms(copy, filename, verbosity, log ,fd);
                 if(chmod(filename, mode) != 0){
                     perror("chmod");
                 }
@@ -192,7 +210,7 @@ void chmod_dir(char* cmd, char* dir_name, int verbosity, int argc, char *argv[],
                     argv[argc - 1] = filename;
                     if (execve("xmod", argv, envp) == -1)
                         perror("execve");
-                    return chmod_dir(copy, filename, verbosity, argc, argv, envp); //just runs if error on execve
+                    return chmod_dir(copy, filename, verbosity, log, fd, argc, argv, envp); //just runs if error on execve
                 } else {
                     wait(0);
                 }
@@ -267,6 +285,22 @@ int main(int argc, char* argv[], char* envp[]){
         fprintf(stdout, "Invalid number of arguments\n");
         exit(1);
     }
+
+    char *logFile;
+    int log = 0;
+    FILE* fd;
+    if ((logFile = getenv("LOG_FILENAME")) != NULL) {
+        log = 1;
+        fd = fopen(logFile, "w+");
+        char str[100];
+        sprintf(str, "%f ; %d ; PROC_CREAT ;", (float) 0, getpid());
+        fputs(str ,fd);
+        for (size_t i = 0; i < argc; i++) {
+            fputc(' ', fd);
+            fputs(argv[i], fd);
+        }
+        fputc('\n', fd);
+    }
     
     if (signal(SIGINT, sig_handler) == SIG_ERR) {
         perror("signal");
@@ -275,7 +309,6 @@ int main(int argc, char* argv[], char* envp[]){
 
     int verbose = 0;
     int recursive = 0;
-    //int log = 0;
     int option;
     int index;
     while ((option = getopt(argc, argv, "vcR")) != -1)
@@ -299,17 +332,6 @@ int main(int argc, char* argv[], char* envp[]){
                 abort();
         }
     }
-
-    char *logFile;
-    if ((logFile = getenv("LOG_FILENAME")) != NULL) {
-        log = 1;
-    }
-
-    /*if (log)
-    {
-        FILE* fd = fopen(logFile, )
-        
-    }*/
     
 
     index = optind;
@@ -340,7 +362,7 @@ int main(int argc, char* argv[], char* envp[]){
     
     if (recursive) {
         if ((arg_info & __S_IFDIR) != 0) {
-            chmod_dir(in, file_name, verbose, argc, argv, envp);
+            chmod_dir(in, file_name, verbose, log, fd, argc, argv, envp);
             return 0;
         } else {
             fprintf(stderr, "Invalid option, not a directory.\n");
@@ -348,12 +370,20 @@ int main(int argc, char* argv[], char* envp[]){
         }
     }
 
-    __mode_t mode = parse_perms(in, file_name, verbose);
+    __mode_t mode = parse_perms(in, file_name, verbose, log, fd);
     if(chmod(file_name, mode) != 0){
         perror("chmod");
         exit(-1);
     }
+
+
     
+    if (log) {
+        char str[100];
+        sprintf(str, "%f ; %d ; PROC_EXIT ; 0\n", getRunningTime(), getpid());
+        fputs(str, fd);
+        fclose(fd);
+    }
 
     return 0;
 }
