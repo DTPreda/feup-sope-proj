@@ -20,7 +20,9 @@ void sig_handler(int signo) {
     {
         int option;
         fprintf(stdout,"\nSIGINT RECEIVED. I am the process with a PID of %d\n", getpid());
-        printf("Would you wish to proceed? [Y/N] ");
+        killpg(getpgrp(), SIGUSR1);
+        wait(-1);
+        fprintf(stdout, "Would you wish to proceed? [Y/N]\n");
         option = getchar();
         switch (option)
         {
@@ -30,11 +32,18 @@ void sig_handler(int signo) {
             break;
         case 'N':
         case 'n':
-            exit(2);
+            killpg(getpgrp(), SIGUSR2);
+            exit(-1);
         default:
             fprintf(stdout, "Unknown option, aborting program\n");
+            killpg(getpgrp(), SIGUSR2);
             exit(-1);
         }
+    } else if (signo == SIGUSR1) {
+        fprintf(stdout, "%i ; %s ; %i ; %i\n", getpid(), "FILENAME", 0, 0);
+        sleep(0.25);
+    } else if (signo == SIGUSR2){
+        exit(2);
     }
 }
 
@@ -165,7 +174,6 @@ void chmod_dir(char* cmd, char* dir_name, int verbosity, int argc, char *argv[],
         }
 
         while((dir = readdir(d)) != NULL){
-
             strcpy(copy, cmd);
             if(dir->d_type == DT_REG || dir->d_type == DT_LNK) { //if it is a regular file
                 strcpy(filename, "");
@@ -287,6 +295,15 @@ int main(int argc, char* argv[], char* envp[]){
         exit(-1);
     }
 
+    if (signal(SIGUSR1, sig_handler) == SIG_ERR) {
+        perror("signal");
+        exit(-1);
+    }
+
+    if (signal(SIGUSR2, sig_handler) == SIG_ERR) {
+        perror("signal");
+        exit(-1);
+    }
     int verbose = 0;
     int recursive = 0;
     int option;
