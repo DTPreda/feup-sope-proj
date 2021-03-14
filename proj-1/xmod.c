@@ -48,6 +48,7 @@ void sig_handler(int signo) {
     } else if (signo == SIGUSR2){
         exit(2);
     }
+}
 
 /**
  * Gets the time that the process runned until the moment this function is called
