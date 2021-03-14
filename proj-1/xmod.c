@@ -18,17 +18,48 @@ char * formatOctal(char *octal);
 void strmode(__mode_t mode, char * buf);
 double getRunningTime();
 
+void sig_handler(int signo) {
+    if (signo == SIGINT)
+    {
+        int option;
+        fprintf(stdout,"\nSIGINT RECEIVED. I am the process with a PID of %d\n", getpid());
+        killpg(getpgrp(), SIGUSR1);
+        wait(-1);
+        fprintf(stdout, "Would you wish to proceed? [Y/N]\n");
+        option = getchar();
+        switch (option)
+        {
+        case 'Y':
+        case 'y':
+            fprintf(stdout, "Resuming process \n");
+            break;
+        case 'N':
+        case 'n':
+            killpg(getpgrp(), SIGUSR2);
+            exit(-1);
+        default:
+            fprintf(stdout, "Unknown option, aborting program\n");
+            killpg(getpgrp(), SIGUSR2);
+            exit(-1);
+        }
+    } else if (signo == SIGUSR1) {
+        fprintf(stdout, "%i ; %s ; %i ; %i\n", getpid(), "FILENAME", 0, 0);
+        sleep(0.25);
+    } else if (signo == SIGUSR2){
+        exit(2);
+    }
+
 /**
  * Gets the time that the process runned until the moment this function is called
  @return double with the time 
 */
-double getRunningTime(){
+double getRunningTime() {
+    //sleep(1);
     clock_gettime(CLOCK_MONOTONIC_RAW, &end);
     double delta_ms = (double)((end.tv_sec - start.tv_sec) * 1000000 + (end.tv_nsec - start.tv_nsec) / 1000)/1000;
     fprintf(stdout, "Elapsed time(ms): %f", delta_ms);
     return delta_ms;
 }
-
 
 __mode_t parse_perms(char* perms, char* filename, int verbosity){
     __mode_t ret = 0;
@@ -156,7 +187,6 @@ void chmod_dir(char* cmd, char* dir_name, int verbosity, int argc, char *argv[],
         }
 
         while((dir = readdir(d)) != NULL){
-
             strcpy(copy, cmd);
             if(dir->d_type == DT_REG || dir->d_type == DT_LNK) { //if it is a regular file
                 strcpy(filename, "");
@@ -281,6 +311,15 @@ int main(int argc, char* argv[], char* envp[]){
         exit(-1);
     }*/
 
+    if (signal(SIGUSR1, sig_handler) == SIG_ERR) {
+        perror("signal");
+        exit(-1);
+    }
+
+    if (signal(SIGUSR2, sig_handler) == SIG_ERR) {
+        perror("signal");
+        exit(-1);
+    }
     int verbose = 0;
     int recursive = 0;
     int option;
