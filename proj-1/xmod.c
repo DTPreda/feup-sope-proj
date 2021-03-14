@@ -24,7 +24,6 @@ double getRunningTime();
  @return double with the time 
 */
 double getRunningTime(){
-    sleep(1);
     clock_gettime(CLOCK_MONOTONIC_RAW, &end);
     double delta_ms = (double)((end.tv_sec - start.tv_sec) * 1000000 + (end.tv_nsec - start.tv_nsec) / 1000)/1000;
     fprintf(stdout, "Elapsed time(ms): %f", delta_ms);
@@ -268,7 +267,7 @@ int main(int argc, char* argv[], char* envp[]){
 
     int verbose = 0;
     int recursive = 0;
-    int log = 0;
+    //int log = 0;
     int option;
     int index;
     while ((option = getopt(argc, argv, "vcR")) != -1)
@@ -298,11 +297,11 @@ int main(int argc, char* argv[], char* envp[]){
         log = 1;
     }
 
-    if (log)
+    /*if (log)
     {
         FILE* fd = fopen(logFile, )
         
-    }
+    }*/
     
 
     index = optind;
