@@ -53,7 +53,7 @@ void sig_handler(int signo) {
  * Gets the time that the process runned until the moment this function is called
  @return double with the time 
 */
-double getRunningTime(){
+double getRunningTime() {
     //sleep(1);
     clock_gettime(CLOCK_MONOTONIC_RAW, &end);
     double delta_ms = (double)((end.tv_sec - start.tv_sec) * 1000000 + (end.tv_nsec - start.tv_nsec) / 1000)/1000;
