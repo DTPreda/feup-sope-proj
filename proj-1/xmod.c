@@ -6,12 +6,28 @@
 #include <unistd.h>
 #include <ctype.h>
 #include "log.h"
+#include <time.h>
+
+struct timespec start, end;
 
 __mode_t parse_perms(char* perms, char* filename, int verbosity);
 __mode_t get_perms(unsigned int r, unsigned int w, unsigned int x, char op, char target, char* filename);
 void chmod_dir(char* cmd, char* dir_name, int verbosity, int argc, char* argv[], char* envp[]);
 char * formatOctal(char *octal);
 void strmode(__mode_t mode, char * buf);
+double getRunningTime();
+
+/**
+ * Gets the time that the process runned until the moment this function is called
+ @return double with the time 
+*/
+double getRunningTime(){
+    sleep(1);
+    clock_gettime(CLOCK_MONOTONIC_RAW, &end);
+    double delta_ms = (double)((end.tv_sec - start.tv_sec) * 1000000 + (end.tv_nsec - start.tv_nsec) / 1000)/1000;
+    fprintf(stdout, "Elapsed time(ms): %f", delta_ms);
+    return delta_ms;
+}
 
 
 __mode_t parse_perms(char* perms, char* filename, int verbosity){
@@ -255,12 +271,15 @@ void strmode(__mode_t mode, char * buf) {
 
 int main(int argc, char* argv[], char* envp[]){
     
+    clock_gettime(CLOCK_MONOTONIC_RAW, &start);
+
+
     if(argc <= 2){
         fprintf(stdout, "Invalid number of arguments\n");
         exit(1);
     }
     
-    //getLog(argc, argv, envp);
+    //fprintf(stdout, "ENV: %s\n", getenv("LOG_FILENAME"));
     
     int verbose = 0;
     int recursive = 0;
@@ -331,6 +350,7 @@ int main(int argc, char* argv[], char* envp[]){
         perror("chmod");
         exit(-1);
     }
+    
 
     return 0;
 }
