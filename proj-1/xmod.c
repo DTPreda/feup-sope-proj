@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <fcntl.h>
 #include <sys/stat.h>
 #include <signal.h>
 #include <dirent.h>
@@ -189,23 +190,6 @@ void chmod_dir(char* cmd, char* dir_name, int verbosity, int argc, char *argv[],
                     wait(0);
                 }
             }
-            /*
-            else if ( dir->d_type == DT_LNK ){
-                //chamar para o que esta escrito no ficheiro
-                char buf[1024];
-                ssize_t nchars = readlink (filename, buf, sizeof(buf) - 1);
-                if (nchars != -1){
-                    buf[nchars] = '\0';
-                    strcpy(filename, "");
-                    strcat(filename, dir_name); strcat(filename, "/");
-                    strcat(filename, buf);
-                    strcat(cmd, filename);
-                    fprintf(stdout, "FILENAME: %s\n", filename);
-                }
-                else{
-                    perror("readLink");
-                }
-            }*/
         }
     }
 }
@@ -284,6 +268,7 @@ int main(int argc, char* argv[], char* envp[]){
 
     int verbose = 0;
     int recursive = 0;
+    int log = 0;
     int option;
     int index;
     while ((option = getopt(argc, argv, "vcR")) != -1)
@@ -307,6 +292,18 @@ int main(int argc, char* argv[], char* envp[]){
                 abort();
         }
     }
+
+    char *logFile;
+    if ((logFile = getenv("LOG_FILENAME")) != NULL) {
+        log = 1;
+    }
+
+    if (log)
+    {
+        FILE* fd = fopen(logFile, )
+        
+    }
+    
 
     index = optind;
 
