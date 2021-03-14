@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/stat.h>
+#include <signal.h>
 #include <dirent.h>
 #include <string.h>
 #include <unistd.h>
@@ -80,8 +81,7 @@ __mode_t parse_perms(char* perms, char* filename, int verbosity){
 
         if(mode == '+'){
             ret |= get_perms(read, write, execute, mode, target, filename);
-        }
-        else if(mode == '='){
+        } else if(mode == '='){
             ret &= ~(get_perms(1, 1, 1, '+', target, filename));
             ret |= get_perms(read, write, execute, '+', target, filename);
         } else {
@@ -125,8 +125,7 @@ __mode_t get_perms(unsigned int r, unsigned int w, unsigned int x, char op, char
                 ret |= modes[i]*targets[j] << ((2 - i) + 3*j);
             }
         }
-    }
-    else if (op == '-'){
+    } else if (op == '-'){
         //ret = permissões do ficheiro
         struct stat stb;
         if(stat(filename, &stb) != 0){	//get permissions
@@ -150,6 +149,7 @@ void chmod_dir(char* cmd, char* dir_name, int verbosity, int argc, char *argv[],
     struct dirent *dir;
     d = opendir(dir_name);
     if(d) {
+
         __mode_t mode = parse_perms(cmd, dir_name, verbosity);
         if(chmod(dir_name, mode) != 0){
             perror("chmod");
@@ -157,6 +157,7 @@ void chmod_dir(char* cmd, char* dir_name, int verbosity, int argc, char *argv[],
         }
 
         while((dir = readdir(d)) != NULL){
+
             strcpy(copy, cmd);
             if(dir->d_type == DT_REG || dir->d_type == DT_LNK) { //if it is a regular file
                 strcpy(filename, "");
@@ -174,7 +175,7 @@ void chmod_dir(char* cmd, char* dir_name, int verbosity, int argc, char *argv[],
                     return;
                 }
                 if(pid == 0){
-                    
+
                     strcpy(filename, ""); 
                     strcat(filename, dir_name); strcat(filename, "/");
                     strcat(filename, dir->d_name);
@@ -184,8 +185,7 @@ void chmod_dir(char* cmd, char* dir_name, int verbosity, int argc, char *argv[],
                     if (execve("xmod", argv, envp) == -1)
                         perror("execve");
                     return chmod_dir(copy, filename, verbosity, argc, argv, envp); //just runs if error on execve
-                } 
-                else {
+                } else {
                     wait(0);
                 }
             }
@@ -207,7 +207,6 @@ void chmod_dir(char* cmd, char* dir_name, int verbosity, int argc, char *argv[],
                 }
             }*/
         }
-        
     }
 }
 
@@ -249,8 +248,7 @@ char * formatOctal(char *octal){
 
         if (i == 1){
             strcat(result, " g=");
-        }
-        else if (i == 2){
+        } else if (i == 2){
             strcat(result, " o=");
         }
     }
@@ -279,8 +277,11 @@ int main(int argc, char* argv[], char* envp[]){
         exit(1);
     }
     
-    //fprintf(stdout, "ENV: %s\n", getenv("LOG_FILENAME"));
-    
+    if (signal(SIGINT, sig_handler) == SIG_ERR) {
+        perror("signal");
+        exit(-1);
+    }
+
     int verbose = 0;
     int recursive = 0;
     int option;
@@ -325,8 +326,7 @@ int main(int argc, char* argv[], char* envp[]){
 
     if (input[0] == '0'){  //get input 
         in = formatOctal(input);
-    }
-    else{
+    } else {
         for (int i = index; i < argc - 1; i++){ //get all inputs u=rwx g=rx o=wx
             strcat(in, argv[i]);
             strcat(in, " ");
@@ -338,8 +338,7 @@ int main(int argc, char* argv[], char* envp[]){
         if ((arg_info & __S_IFDIR) != 0) {
             chmod_dir(in, file_name, verbose, argc, argv, envp);
             return 0;
-        }
-        else {
+        } else {
             fprintf(stderr, "Invalid option, not a directory.\n");
             exit(-1);
         }
@@ -354,3 +353,4 @@ int main(int argc, char* argv[], char* envp[]){
 
     return 0;
 }
+
