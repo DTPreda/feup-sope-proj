@@ -19,23 +19,16 @@ char * formatOctal(char *octal);
 void strmode(__mode_t mode, char * buf);
 void sig_handler(int signo);
 double getRunningTime();
-
-/**
- * Gets the time that the process runned until the moment this function is called
- @return double with the time 
-*/
-double getRunningTime(){
-    clock_gettime(CLOCK_MONOTONIC_RAW, &end);
-    double delta_ms = (double)((end.tv_sec - start.tv_sec) * 1000000 + (end.tv_nsec - start.tv_nsec) / 1000)/1000;
-    return delta_ms;
-}
+void write_to_log(char* filename, unsigned int event);
 
 void sig_handler(int signo) {
     if (signo == SIGINT)
     {
         int option;
         fprintf(stdout,"\nSIGINT RECEIVED. I am the process with a PID of %d\n", getpid());
-        printf("Would you wish to proceed? [Y/N] ");
+        killpg(getpgrp(), SIGUSR1);
+        wait(-1);
+        fprintf(stdout, "Would you wish to proceed? [Y/N]\n");
         option = getchar();
         switch (option)
         {
@@ -45,12 +38,34 @@ void sig_handler(int signo) {
             break;
         case 'N':
         case 'n':
-            exit(2);
+            killpg(getpgrp(), SIGUSR2);
+            exit(-1);
         default:
             fprintf(stdout, "Unknown option, aborting program\n");
+            killpg(getpgrp(), SIGUSR2);
             exit(-1);
         }
+    } else if (signo == SIGUSR1) {
+        fprintf(stdout, "%i ; %s ; %i ; %i\n", getpid(), "FILENAME", 0, 0);
+        sleep(0.25);
+    } else if (signo == SIGUSR2){
+        exit(2);
     }
+}
+
+void write_to_log(char* filename, unsigned int event) {
+     FILE* fd = fopen(filename, "w+");
+
+}
+
+/**
+ * Gets the time that the process runned until the moment this function is called
+ @return double with the time 
+*/
+double getRunningTime() {
+    clock_gettime(CLOCK_MONOTONIC_RAW, &end);
+    double delta_ms = (double)((end.tv_sec - start.tv_sec) * 1000000 + (end.tv_nsec - start.tv_nsec) / 1000)/1000;
+    return delta_ms;
 }
 
 __mode_t parse_perms(char* perms, char* filename, int verbosity, int log, FILE* fd){
@@ -123,9 +138,11 @@ __mode_t parse_perms(char* perms, char* filename, int verbosity, int log, FILE* 
         printf("mode of '%s' retained as 0%o (%s)\n", filename, ret % 512, oldMode);
 
     if (ret != old) {
-        char str[100];
-        sprintf(str, "%f ; %d ; FILE_MODF ; %s : %u : %u\n", getRunningTime(), getpid(), filename, old, ret);
-        fputs(str, fd);
+        if (log) {
+            char str[100];
+            sprintf(str, "%f ; %d ; FILE_MODF ; %s : %u : %u\n", getRunningTime(), getpid(), filename, old, ret);
+            fputs(str, fd);
+        }
         if (verbosity)
             printf("mode of '%s' changed from 0%o (%s) to 0%o (%s)\n", filename, old % 512, oldMode, ret % 512, newMode);
     }
@@ -183,7 +200,6 @@ void chmod_dir(char* cmd, char* dir_name, int verbosity, int log, FILE* fd, int 
         }
 
         while((dir = readdir(d)) != NULL){
-
             strcpy(copy, cmd);
             if(dir->d_type == DT_REG || dir->d_type == DT_LNK) { //if it is a regular file
                 strcpy(filename, "");
@@ -275,15 +291,104 @@ void strmode(__mode_t mode, char * buf) {
   buf[9] = '\0';
 }
 
+int set_handlers(){
+    if (signal(SIGINT, sig_handler) == SIG_ERR) {
+        perror("signal");
+        return 1;
+    }
+
+    if (signal(SIGUSR1, sig_handler) == SIG_ERR) {
+        perror("signal");
+        return 1;
+    }
+    
+    if (signal(SIGUSR2, sig_handler) == SIG_ERR) {
+        perror("signal");
+        return 1;
+    }
+
+    return 0;
+}
+
+
+void get_options(int* verbose, int* recursive, int* index, int argc, char* argv[]){
+    int option;
+    while ((option = getopt(argc, argv, "vcR")) != -1)
+    {
+        switch (option) {
+            case 'v':
+                *verbose = 1;
+                break;
+            case 'c':
+                *verbose = 2;
+                break;
+            case 'R':
+                *recursive = 1;
+                break;
+            case '?':
+                if (isprint(optopt)) {
+                    fprintf(stderr, "Unknown option '-%c'.\n", optopt);
+                    exit(-1);
+                }
+            default:
+                abort();
+        }
+    }
+    
+
+    *index = optind;
+}
+
+void get_input(char* input, char* in, char* file_name, int index, int argc, char* argv[]){
+    if (input[0] == '0'){  //get input 
+        in = formatOctal(input);
+    } else {
+        for (int i = index; i < argc - 1; i++){ //get all inputs u=rwx g=rx o=wx
+            strcat(in, argv[i]);
+            strcat(in, " ");
+            //printf("String: %s\n", in);
+        }
+    }
+}
+
+int run_xmod(char* in, char* file_name, int verbose, int recursive, int argc, char* argv[], char* envp[]){
+    struct stat st;
+    if(stat(file_name, &st) != 0) {
+        perror("stat");
+        return 1;
+    }
+
+    __mode_t arg_info = st.st_mode;
+
+    if (recursive) {
+        if ((arg_info & __S_IFDIR) != 0) {
+            chmod_dir(in, file_name, verbose, log, fd, argc, argv, envp);
+            return 0;
+        } else {
+            fprintf(stderr, "Invalid option, not a directory.\n");
+            return 1;
+        }
+    } else {
+        __mode_t mode = parse_perms(in, file_name, verbose);
+        if(chmod(file_name, mode) != 0){
+            perror("chmod");
+            return 1;
+        }
+        return 0;
+    }
+}
 
 int main(int argc, char* argv[], char* envp[]){
     
     clock_gettime(CLOCK_MONOTONIC_RAW, &start);
 
-
     if(argc <= 2){
         fprintf(stdout, "Invalid number of arguments\n");
-        exit(1);
+        return 1;
+    }
+
+    if(set_handlers()){
+        return 1;
     }
 
     char *logFile;
@@ -302,89 +407,19 @@ int main(int argc, char* argv[], char* envp[]){
         fputc('\n', fd);
     }
     
-    if (signal(SIGINT, sig_handler) == SIG_ERR) {
-        perror("signal");
-        exit(-1);
-    }
-
-    int verbose = 0;
-    int recursive = 0;
-    int option;
-    int index;
-    while ((option = getopt(argc, argv, "vcR")) != -1)
-    {
-        switch (option) {
-            case 'v':
-                verbose = 1;
-                break;
-            case 'c':
-                verbose = 2;
-                break;
-            case 'R':
-                recursive = 1;
-                break;
-            case '?':
-                if (isprint(optopt)) {
-                    fprintf(stderr, "Unknown option '-%c'.\n", optopt);
-                    exit(-1);
-                }
-            default:
-                abort();
-        }
-    }
+    int verbose, recursive, index;
+    get_options(&verbose, &recursive, &index, argc, argv);
     
-
-    index = optind;
-
     char *input = argv[index];
-    
     char *in = (char *) malloc (18 * sizeof(char));
-
     char *file_name = argv[argc - 1];
+    get_input(input, in, file_name, index, argc, argv);
 
-    struct stat st;
-    if(stat(file_name, &st) != 0) {
-        perror("stat");
-        exit(-1);
-    }
-
-    __mode_t arg_info = st.st_mode;
-
-    if (input[0] == '0'){  //get input 
-        in = formatOctal(input);
-    } else {
-        for (int i = index; i < argc - 1; i++){ //get all inputs u=rwx g=rx o=wx
-            strcat(in, argv[i]);
-            strcat(in, " ");
-            //printf("String: %s\n", in);
-        }
+    if(run_xmod(in, file_name, verbose, recursive, argc, argv, envp) != 0){
+        return 1;
     }
     
-    if (recursive) {
-        if ((arg_info & __S_IFDIR) != 0) {
-            chmod_dir(in, file_name, verbose, log, fd, argc, argv, envp);
-            return 0;
-        } else {
-            fprintf(stderr, "Invalid option, not a directory.\n");
-            exit(-1);
-        }
-    }
-
-    __mode_t mode = parse_perms(in, file_name, verbose, log, fd);
-    if(chmod(file_name, mode) != 0){
-        perror("chmod");
-        exit(-1);
-    }
-
-
-    
-    if (log) {
-        char str[100];
-        sprintf(str, "%f ; %d ; PROC_EXIT ; 0\n", getRunningTime(), getpid());
-        fputs(str, fd);
-        fclose(fd);
-    }
-
+    double value = getRunningTime();
     return 0;
 }
 
