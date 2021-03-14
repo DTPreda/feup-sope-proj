@@ -8,15 +8,74 @@
 #include <ctype.h>
 #include "log.h"
 #include <time.h>
+#include <math.h>
 
-struct timespec start, end;
+#define LOG_FILENAME "LOG_FILENAME"
+#define ELDEST_PID "ELDEST_PID"
+#define START_TIME "START_TIME"
+
+
+struct timespec startTime, endTime;
+long int timeStart, timeEnd;
+
 
 __mode_t parse_perms(char* perms, char* filename, int verbosity);
 __mode_t get_perms(unsigned int r, unsigned int w, unsigned int x, char op, char target, char* filename);
 void chmod_dir(char* cmd, char* dir_name, int verbosity, int argc, char* argv[], char* envp[]);
 char * formatOctal(char *octal);
 void strmode(__mode_t mode, char * buf);
-double getRunningTime();
+double get_running_time();
+void set_log_file(FILE* logFile);
+void log_start();
+
+
+void set_log_file(FILE* logFile) {
+    char* fileName = getenv(LOG_FILENAME);
+
+    if (fileName) {
+        if (atoi(getenv(ELDEST_PID)) != getpid()) {     //is not the eldest process, so add content to file
+            logFile = fopen(fileName, "a");
+        } 
+        else {
+            logFile = fopen(fileName, "w");  // erase content
+            logFile = freopen(fileName, "a", logFile);  //
+        }
+    }
+}
+
+void log_start() {
+    
+    if (getenv(ELDEST_PID)) {  // if the env variable already exists
+        //fprintf(stdout, "ELDEST_PIT: %d, START_TIME: %ld, LOG_FILENAME: %s\n", atoi(getenv(ELDEST_PID)), atol(getenv(START_TIME)), getenv(LOG_FILENAME));
+        timeStart = atol(getenv(START_TIME));
+    } 
+    else {
+        //fprintf(stdout, "setting up env variable\n");
+        clock_gettime(CLOCK_REALTIME, &startTime);
+        long int timeStart = startTime.tv_sec * 1000 + startTime.tv_nsec/(pow(10, 6));    //time in ms
+
+        char pid[15];
+        char stTime[50];
+        snprintf(pid, sizeof(pid), "%d", getpid());
+        snprintf(stTime, sizeof(stTime) , "%ld", timeStart);
+
+        int stat = setenv(START_TIME, stTime, 0);           //store the starting time on environment variable
+        if (stat == -1) {
+            fprintf(stderr, "Error setting environment variable\n");
+            exit(1);
+        } 
+        //fprintf(stdout, "Created start_time env variable: %s\n", getenv(START_TIME));
+
+        stat = setenv(ELDEST_PID, pid, 0);                  //store the eldest_pid on environment variable
+        if (stat == -1) {
+            fprintf(stderr, "Error setting environment variable\n");
+            exit(1);
+        }
+        //fprintf(stdout, "Created eldest_pid env variable: %s\n", getenv(ELDEST_PID));
+    }
+}
+
+
 
 void sig_handler(int signo) {
     if (signo == SIGINT)
@@ -54,11 +113,11 @@ void sig_handler(int signo) {
  * Gets the time that the process runned until the moment this function is called
  @return double with the time 
 */
-double getRunningTime() {
+long int get_running_time() {
     //sleep(1);
-    clock_gettime(CLOCK_MONOTONIC_RAW, &end);
-    double delta_ms = (double)((end.tv_sec - start.tv_sec) * 1000000 + (end.tv_nsec - start.tv_nsec) / 1000)/1000;
-    fprintf(stdout, "Elapsed time(ms): %f", delta_ms);
+    clock_gettime(CLOCK_REALTIME, &endTime);
+    long int delta_ms = startTime.tv_sec * 1000 + startTime.tv_nsec/(pow(10, 6));    //time in ms
+    //fprintf(stdout, "Elapsed time(ms): %f", delta_ms);
     return delta_ms;
 }
 
@@ -212,7 +271,7 @@ void chmod_dir(char* cmd, char* dir_name, int verbosity, int argc, char *argv[],
                     strcat(cmd, filename);
 
                     argv[argc - 1] = filename;
-                    if (execve("xmod", argv, envp) == -1)
+                    if (execv("xmod", argv) == -1)
                         perror("execve");
                     return chmod_dir(copy, filename, verbosity, argc, argv, envp); //just runs if error on execve
                 } else {
@@ -299,7 +358,10 @@ void strmode(__mode_t mode, char * buf) {
 
 int main(int argc, char* argv[], char* envp[]){
     
-    clock_gettime(CLOCK_MONOTONIC_RAW, &start);
+    FILE* logFile;
+
+    log_start();
+    set_log_file(logFile);
 
 
     if(argc <= 2){
@@ -389,7 +451,8 @@ int main(int argc, char* argv[], char* envp[]){
         exit(-1);
     }
     
-    double value = getRunningTime();
+    double value = get_running_time();
+    fprintf(stdout, "RUNNING TIME: %f\n", value);
     return 0;
 }
 
