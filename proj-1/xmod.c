@@ -200,7 +200,6 @@ void chmod_dir(char* cmd, char* dir_name, int verbosity, int argc, char *argv[],
                 //chamar para o que esta escrito no ficheiro
             }
         }
-        
     }
 }
 
@@ -343,3 +342,4 @@ int main(int argc, char* argv[], char* envp[]){
 
     return 0;
 }
+
