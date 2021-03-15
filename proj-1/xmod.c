@@ -526,11 +526,19 @@ int run_xmod(char* in, char* file_name, int verbosity, int recursive, int argc, 
                 return 1;
             }
             return 0;
-        } else {
-            fprintf(stderr, "Invalid option, not a directory.\n");
+        } 
+        else {
+            nftot += 1;
+            //fprintf(stderr, "Invalid option, not a directory, %d.\n", recursive);
+            if(xmod(in, file_name, verbosity) != 0){
+                perror("chmod");
+                return 1;
+            }
+            nfmod += 1;
             return 1;
         }
-    } else {
+    } 
+    else {
         nftot += 1;
         if(xmod(in, file_name, verbosity) != 0){
             perror("chmod");
@@ -573,7 +581,7 @@ int main(int argc, char* argv[], char* envp[]){
         log_start();
         write_to_log(PROC_CREATE, str);
 
-        int verbosity, recursive, index;
+        int verbosity = 0, recursive = 0, index;
         if(get_options(&verbosity, &recursive, &index, argc, argv)){
             strcpy(exit_code, "1");
         } else {
