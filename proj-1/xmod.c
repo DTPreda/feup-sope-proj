@@ -69,25 +69,21 @@ int log_start() {
             return 1;
         }
 
-        char* log_file_name = (char*) malloc(sizeof(char) * strlen(getenv(LOG_FILENAME)));
-        strcpy(log_file_name, getenv(LOG_FILENAME));
+        char* log_file_name = getenv(LOG_FILENAME);
 
-        if(log_file_name){
+        if(log_file_name != NULL){
             FILE* log_file = fopen(log_file_name, "w");
             fclose(log_file);
         }
 
-        free(log_file_name);
     }
 
     return 0;
 }
 
 void write_to_log(unsigned int event, char* info) {
-    char* log_file_name = (char*) malloc(sizeof(char) * strlen(getenv(LOG_FILENAME)));
-    strcpy(log_file_name, getenv(LOG_FILENAME));
-
-    if (log_file_name) {
+    char* log_file_name = getenv(LOG_FILENAME);
+    if (log_file_name != NULL) {
         FILE* log_file;
 
         log_file = fopen(log_file_name, "a");
@@ -115,19 +111,17 @@ void write_to_log(unsigned int event, char* info) {
 
         fputs(str, log_file);
         fclose(log_file);
-    } else {
-        fprintf(stdout, "LOG_FILENAME env variable was not found.");
+    } 
+    else {
+        //fprintf(stdout, "LOG_FILENAME env variable was not found.");
     }
 
-    free(log_file_name);
 }
 
 void sig_handler(int signo) {
-    char* log_file_name = (char*) malloc(sizeof(char) * strlen(getenv(LOG_FILENAME)));
-    strcpy(log_file_name, getenv(LOG_FILENAME));
+    char* log_file_name = getenv(LOG_FILENAME);
 
-
-    if (log_file_name) {
+    if (log_file_name != NULL) {
         FILE* log_file;
 
         log_file = fopen(log_file_name, "a");
@@ -188,7 +182,6 @@ void sig_handler(int signo) {
         fclose(log_file);
     }
 
-    free(log_file_name);
 }
 
 
