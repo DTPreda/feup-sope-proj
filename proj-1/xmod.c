@@ -517,27 +517,27 @@ void format_argv(int argc, char *argv[], char* str){
 
 
 int main(int argc, char* argv[], char* envp[]){
-    char exit_code = '0';
+    char exit_code[2];
+    strcpy(exit_code, "0");
 
     // verificar se há argumentos suficientes para correr o programa
     if(argc <= 2){
         fprintf(stdout, "Invalid number of arguments\n");
-        exit_code = '1';
+        strcpy(exit_code, "1");
     }
     
     char* str = (char *) malloc(100*sizeof(char));
     format_argv(argc, argv, str);
-    fprintf(stdout, "input: %s\n", str);
     
     if(set_handlers()){
-        exit_code = '1';
+        strcpy(exit_code, "1");
     } else {
         log_start();
         write_to_log(PROC_CREATE, str);
 
         int verbosity, recursive, index;
         if(get_options(&verbosity, &recursive, &index, argc, argv)){
-            exit_code = 1;
+            strcpy(exit_code, "1");
         } else {
             char *input = argv[index];
             char *in = (char *) malloc (18 * sizeof(char));
@@ -545,16 +545,14 @@ int main(int argc, char* argv[], char* envp[]){
             get_input(input, in, file_name, index, argc, argv);
 
             if(run_xmod(in, file_name, verbosity, recursive, argc, argv) != 0){
-                exit_code = '1';
+                strcpy(exit_code, "1");
             }
         }
     }
 
-    //fprintf(stdout, "%s\n", getenv(ELDEST_PID));
 
-    write_to_log(PROC_EXIT, &exit_code);
+    write_to_log(PROC_EXIT, exit_code);
     if(getpid() == atoi(getenv(ELDEST_PID))) wait(0);
-    return atoi(&exit_code);
-    return 0;
+    return atoi(exit_code);
 }
 
