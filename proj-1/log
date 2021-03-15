@@ -1,6 +1,20 @@
-0 ; 7081 ; PROC_CREAT ;  ./xmod -vR a=rwx xmodtest
-1 ; 7082 ; PROC_CREAT ;  ./xmod -vR a=rwx xmodtest/xmodtest2
-1 ; 7083 ; PROC_CREAT ;  ./xmod -vR a=rwx xmodtest/xmodtest2/subfolder
-1 ; 7083 ; PROC_EXIT ; 0
-1 ; 7082 ; PROC_EXIT ; 0
-1 ; 7081 ; PROC_EXIT ; 0
+0 ; 8412 ; PROC_CREAT ; ./xmod -vR a=rwx xmodtest
+2003 ; 8413 ; PROC_CREAT ; ./xmod -vR a=rwx xmodtest/xmodtest2
+2356 ; 8412 ; SIGNAL_RECV ; SIGINT
+
+2356 ; 8412 ; SIGNAL_SENT ; SIGUSR1 : 8412
+2356 ; 8413 ; SIGNAL_RECV ; SIGINT
+
+2357 ; 8412 ; SIGNAL_RECV ; SIGUSR1
+
+2357 ; 8413 ; SIGNAL_RECV ; SIGUSR1
+
+2359 ; 8413 ; SIGNAL_SENT ; SIGUSR1 : 8412
+2359 ; 8413 ; SIGNAL_RECV ; SIGUSR1
+
+2359 ; 8412 ; SIGNAL_RECV ; SIGUSR1
+
+4197 ; 8414 ; PROC_CREAT ; ./xmod -vR a=rwx xmodtest/xmodtest2/subfolder
+6199 ; 8414 ; PROC_EXIT ; 0
+6200 ; 8413 ; PROC_EXIT ; 0
+8214 ; 8412 ; PROC_EXIT ; 0

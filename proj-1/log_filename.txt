@@ -1,6 +1,0 @@
-0 ; 6817 ; PROC_CREAT ; argv
-1 ; 6818 ; PROC_CREAT ; argv
-1 ; 6819 ; PROC_CREAT ; argv
-1 ; 6819 ; PROC_EXIT ; 0Ú£"ÿ
-2 ; 6818 ; PROC_EXIT ; 0äÔð†ü
-2 ; 6817 ; PROC_EXIT ; 0õa.þ

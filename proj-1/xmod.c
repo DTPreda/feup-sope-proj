@@ -96,7 +96,7 @@ void write_to_log(unsigned int event, char* info) {
         switch (event)
         {
         case PROC_CREATE:
-            sprintf(str, "%ld ; %d ; PROC_CREAT ; %s\n", get_running_time() - time_start, getpid(), info);
+            sprintf(str, "%ld ; %d ; PROC_CREAT ;%s\n", get_running_time() - time_start, getpid(), info);
             break;
         case PROC_EXIT:
             sprintf(str, "%ld ; %d ; PROC_EXIT ; %s\n", get_running_time() - time_start, getpid(), info);
@@ -123,34 +123,69 @@ void write_to_log(unsigned int event, char* info) {
 }
 
 void sig_handler(int signo) {
-    if (signo == SIGINT)
-    {
-        int option;
-        fprintf(stdout,"\nSIGINT RECEIVED. I am the process with a PID of %d\n", getpid());
-        killpg(getpgrp(), SIGUSR1);
-        wait(-1);
-        fprintf(stdout, "Would you wish to proceed? [Y/N]\n");
-        option = getchar();
-        switch (option)
-        {
-        case 'Y':
-        case 'y':
-            fprintf(stdout, "Resuming process \n");
-            break;
-        case 'N':
-        case 'n':
-            killpg(getpgrp(), SIGUSR2);
-        default:
-            fprintf(stdout, "Unknown option, aborting program\n");
-            killpg(getpgrp(), SIGUSR2);
+    char* log_file_name = (char*) malloc(sizeof(char) * strlen(getenv(LOG_FILENAME)));
+    strcpy(log_file_name, getenv(LOG_FILENAME));
+
+
+    if (log_file_name) {
+        FILE* log_file;
+
+        log_file = fopen(log_file_name, "a");
+        if (signo == SIGINT){
+            char sig_received[15];
+            sprintf(sig_received, "SIGINT\n");
+            write_to_log(SIGNAL_RECV, sig_received);
+
+            int option;
+            fprintf(stdout,"\nSIGINT RECEIVED. I am the process with a PID of %d\n", getpid());
+            char msg1[15], msg2[15];
+            sprintf(msg1, "SIGUSR1 : %d", getpgrp());
+            sprintf(msg2, "SIGUSR2 : %d", getpgrp());
+
+            write_to_log(SIGNAL_SENT, msg1);
+            killpg(getpgrp(), SIGUSR1);
+
+            wait(-1);
+            fprintf(stdout, "Would you wish to proceed? [Y/N]\n");
+            option = getchar();
+            switch (option){
+                case 'Y':
+                case 'y':
+                    fprintf(stdout, "Resuming process \n");
+                    break;
+                case 'N':
+                case 'n':
+                    write_to_log(SIGNAL_SENT, msg2);
+                    killpg(getpgrp(), SIGUSR2);
+                default:
+                    fprintf(stdout, "Unknown option, aborting program\n");
+                    write_to_log(SIGNAL_SENT, msg2);
+                    killpg(getpgrp(), SIGUSR2);
+            }
         }
-    } else if (signo == SIGUSR1) {
-        fprintf(stdout, "%i ; %s ; %i ; %i\n", getpid(), "FILENAME", 0, 0);
-        sleep(0.25);
-    } else if (signo == SIGUSR2){
-        write_to_log(PROC_EXIT, "A TUA TIA");
-        exit(1);
+        else if (signo == SIGUSR1) {
+            char sig_received[15];
+            sprintf(sig_received, "SIGUSR1\n");
+            write_to_log(SIGNAL_RECV, sig_received);
+            
+            fprintf(stdout, "%i ; %s ; %i ; %i\n", getpid(), "FILENAME", 0, 0);
+            sleep(0.25);
+        } 
+        else if (signo == SIGUSR2){
+            char sig_received[15];
+            sprintf(sig_received, "SIGUSR2\n");
+            write_to_log(SIGNAL_RECV, sig_received);
+
+            write_to_log(PROC_EXIT, "1");
+            exit(1);
+        }
+        else{
+
+        }
+        fclose(log_file);
     }
+
+    free(log_file_name);
 }
 
 
@@ -292,6 +327,7 @@ __mode_t get_perms(unsigned int r, unsigned int w, unsigned int x, char op, char
 
 int recursive_xmod(char* cmd, char* dir_name, int verbosity, int argc, char *argv[]){
     //filename points to a dir
+    sleep(2);
     char copy[100];
     char filename[100];
     DIR* d;
@@ -553,6 +589,8 @@ int main(int argc, char* argv[], char* envp[]){
 
     write_to_log(PROC_EXIT, exit_code);
     if(getpid() == atoi(getenv(ELDEST_PID))) wait(0);
+
+    free(str);
     return atoi(exit_code);
 }
 
