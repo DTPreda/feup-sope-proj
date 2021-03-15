@@ -36,6 +36,7 @@ char * format_octal(char *octal);
 void str_mode(__mode_t mode, char * buf);
 long int get_running_time();
 int log_start();
+void format_argv(int argc, char* argv[], char* str);
 
 
 /**
@@ -502,6 +503,19 @@ int run_xmod(char* in, char* file_name, int verbosity, int recursive, int argc, 
     }
 }
 
+/**
+ * Gets the input on argv into a string
+ *@param str destination of the input in argv
+ */ 
+void format_argv(int argc, char *argv[], char* str){
+    strcpy(str, "");
+    for (int i = 0; i < argc; i++){
+        strcat(str, " ");
+        strcat(str, argv[i]);
+    }
+}
+
+
 int main(int argc, char* argv[], char* envp[]){
     char exit_code = '0';
 
@@ -511,12 +525,15 @@ int main(int argc, char* argv[], char* envp[]){
         exit_code = '1';
     }
     
+    char* str = (char *) malloc(100*sizeof(char));
+    format_argv(argc, argv, str);
+    fprintf(stdout, "input: %s\n", str);
     
     if(set_handlers()){
         exit_code = '1';
     } else {
         log_start();
-        write_to_log(PROC_CREATE, "argv");
+        write_to_log(PROC_CREATE, str);
 
         int verbosity, recursive, index;
         if(get_options(&verbosity, &recursive, &index, argc, argv)){

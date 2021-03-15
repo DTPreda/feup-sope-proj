@@ -1,0 +1,6 @@
+0 ; 6873 ; PROC_CREAT ;  ./xmod -vR a=rwx xmodtest
+1 ; 6874 ; PROC_CREAT ;  ./xmod -vR a=rwx xmodtest/xmodtest2
+1 ; 6875 ; PROC_CREAT ;  ./xmod -vR a=rwx xmodtest/xmodtest2/subfolder
+2 ; 6875 ; PROC_EXIT ; 0ГЧZЭ
+2 ; 6874 ; PROC_EXIT ; 0ЯT%╒Э
+2 ; 6873 ; PROC_EXIT ; 0"еж─Ъ
