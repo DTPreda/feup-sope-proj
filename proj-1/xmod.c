@@ -157,10 +157,12 @@ void sig_handler(int signo) {
                 case 'n':
                     write_to_log(SIGNAL_SENT, msg2);
                     killpg(getpgrp(), SIGUSR2);
+                    break;
                 default:
                     fprintf(stdout, "Unknown option, aborting program\n");
                     write_to_log(SIGNAL_SENT, msg2);
                     killpg(getpgrp(), SIGUSR2);
+                    break;
             }
         }
         else if (signo == SIGUSR1) {
