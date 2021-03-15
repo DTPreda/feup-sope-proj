@@ -15,10 +15,15 @@
 #define ELDEST_PID "ELDEST_PID"
 #define START_TIME "START_TIME"
 
+#define PROC_CREATE 0
+#define PROC_EXIT   1
+#define SIGNAL_RECV 2
+#define SIGNAL_SENT 3
+#define FILE_MODF   4
 
-struct timespec startTime, endTime;
-long int timeStart, timeEnd;
-static char* log_file;
+
+struct timespec start_time, end_time;
+long int time_start, time_end;
 unsigned int nftot = 0;
 unsigned int nfmod = 0;
 
@@ -26,32 +31,12 @@ unsigned int nfmod = 0;
 int xmod(char* in, char* file_name, int verbosity);
 __mode_t parse_perms(char* perms, char* filename, int verbosity);
 __mode_t get_perms(unsigned int r, unsigned int w, unsigned int x, char op, char target, char* filename);
-void chmod_dir(char* cmd, char* dir_name, int verbosity, int argc, char* argv[], char* envp[]);
+int recursive_xmod(char* cmd, char* dir_name, int verbosity, int argc, char* argv[]);
 char * formatOctal(char *octal);
 void strmode(__mode_t mode, char * buf);
 long int get_running_time();
-void set_log_file(FILE* logFile);
 void log_start();
 
-
-/**
- * Gets the log_filename output file into log_file global variable
- * Opens the file of log_filename.
- *@param FILE* variable which will have the file of log_filename
- */
-void set_log_file(FILE* logFile) {
-    log_file = getenv(LOG_FILENAME);
-
-    if (log_file) {
-        if (atoi(getenv(ELDEST_PID)) != getpid()) {     //is not the eldest process, so add content to file
-            logFile = fopen(log_file, "a");
-        } 
-        else {              //is the eldest so we have to truncate
-            logFile = fopen(log_file, "w");  // erase content
-            logFile = freopen(log_file, "a", logFile);    //reopen to add content
-        }
-    }
-}
 
 /**
  * Setup of environment variables to store the starting time of program
@@ -60,36 +45,79 @@ void set_log_file(FILE* logFile) {
 void log_start() {
     
     if (getenv(ELDEST_PID)) {  // if the env variable already exists
-        //fprintf(stdout, "ELDEST_PIT: %d, START_TIME: %ld, LOG_FILENAME: %s\n", atoi(getenv(ELDEST_PID)), atol(getenv(START_TIME)), getenv(LOG_FILENAME));
-        timeStart = atol(getenv(START_TIME));
+        time_start = atol(getenv(START_TIME));
     } 
     else {
-        //fprintf(stdout, "setting up env variable\n");
-        clock_gettime(CLOCK_REALTIME, &startTime);
-        long int timeStart = startTime.tv_sec * 1000 + startTime.tv_nsec/(pow(10, 6));    //time in ms
+        clock_gettime(CLOCK_REALTIME, &start_time);
+        time_start = start_time.tv_sec * 1000 + start_time.tv_nsec/(pow(10, 6));    //time in ms
 
         char pid[15];
-        char stTime[50];
+        char st_time[50];
         snprintf(pid, sizeof(pid), "%d", getpid());
-        snprintf(stTime, sizeof(stTime) , "%ld", timeStart);
+        snprintf(st_time, sizeof(st_time) , "%ld", time_start);
 
-        int stat = setenv(START_TIME, stTime, 0);           //store the starting time on environment variable
+        int stat = setenv(START_TIME, st_time, 0);           //store the starting time on environment variable
         if (stat == -1) {
             fprintf(stderr, "Error setting environment variable\n");
             exit(1);
         } 
-        //fprintf(stdout, "Created start_time env variable: %s\n", getenv(START_TIME));
 
         stat = setenv(ELDEST_PID, pid, 0);                  //store the eldest_pid on environment variable
         if (stat == -1) {
             fprintf(stderr, "Error setting environment variable\n");
             exit(1);
         }
-        //fprintf(stdout, "Created eldest_pid env variable: %s\n", getenv(ELDEST_PID));
+
+        char* log_file_name = (char*) malloc(sizeof(char) * strlen(getenv(LOG_FILENAME)));
+        strcpy(log_file_name, getenv(LOG_FILENAME));
+
+        if(log_file_name){
+            FILE* log_file = fopen(log_file_name, "w");
+            fclose(log_file);
+        }
+
+        free(log_file_name);
     }
 }
 
+void write_to_log(unsigned int event, char* info) {
+    char* log_file_name = (char*) malloc(sizeof(char) * strlen(getenv(LOG_FILENAME)));
+    strcpy(log_file_name, getenv(LOG_FILENAME));
 
+    if (log_file_name) {
+        FILE* log_file;
+
+        log_file = fopen(log_file_name, "a");
+
+        char str[100];
+        switch (event)
+        {
+        case PROC_CREATE:
+            sprintf(str, "%ld ; %d ; PROC_CREAT ; %s\n", get_running_time() - time_start, getpid(), "1234");
+            break;
+        case PROC_EXIT:
+            sprintf(str, "%ld ; %d ; PROC_EXIT ; %s\n", get_running_time() - time_start, getpid(), "test");
+            break;
+        case SIGNAL_RECV:
+            sprintf(str, "%ld ; %d ; SIGNAL_RECV ; %s\n", get_running_time() - time_start, getpid(), "test");
+            break;
+        case SIGNAL_SENT:
+            sprintf(str, "%ld ; %d ; SIGNAL_SENT ; %s\n", get_running_time() - time_start, getpid(), "test");
+            break;
+        case FILE_MODF:
+            sprintf(str, "%ld ; %d ; FILE_MODF ; %s\n", get_running_time() - time_start, getpid(), "test");
+        default:
+            break;
+        }
+
+        fputs(str, log_file);
+        fclose(log_file);
+    } else {
+        fprintf(stdout, "LOG_FILENAME env variable was not found.");
+    }
+
+    free(log_file_name);
+}
 
 void sig_handler(int signo) {
     if (signo == SIGINT)
@@ -123,45 +151,14 @@ void sig_handler(int signo) {
     }
 }
 
-void write_to_log(unsigned int event, char* info) {
-    if (*log_file == NULL)
-        return;
-
-     FILE* fd = fopen(log_file, "w");
-     char str[100];
-     switch (event)
-     {
-     case 0:
-         sprintf(str, "%f ; %d ; PROC_CREAT ; %s\n", getRunningTime(), getpid(), "1234");
-         break;
-     case 1:
-        sprintf(str, "%f, %d ; PROC_EXIT ; %s\n", getRunningTime(), getpid(), "test");
-        break;
-    case 2:
-        sprintf(str, "%f ; %d ; SIGNAL_RECV ; %s\n", getRunningTime(), getpid(), "test");
-        break;
-    case 3:
-        sprintf(str, "%f ; %d ; SIGNAL_SENT ; %s\n", getRunningTime(), getpid(), "test");
-        break;
-    case 4:
-        sprintf(str, "%f ; %d ; FILE_MODF ; %s\n", getRunningTime(), getpid(), "test");
-     default:
-         break;
-     }
-
-    fputs(str, fd);
-    fclose(fd);
-}
 
 /**
  * Gets the time that the process runned until the moment this function is called
  @return double with the time 
 */
 long int get_running_time() {
-    //sleep(1);
-    clock_gettime(CLOCK_REALTIME, &endTime);
-    long int delta_ms = startTime.tv_sec * 1000 + startTime.tv_nsec/(pow(10, 6));    //time in ms
-    //fprintf(stdout, "Elapsed time(ms): %f", delta_ms);
+    clock_gettime(CLOCK_REALTIME, &end_time);
+    long int delta_ms = end_time.tv_sec * 1000 + end_time.tv_nsec/(pow(10, 6));    //time in ms
     return delta_ms;
 }
 
@@ -171,6 +168,7 @@ __mode_t parse_perms(char* perms, char* filename, int verbosity){
     struct stat stb;
     if(stat(filename, &stb) != 0){	//get permissions
         perror("Stat");
+        return __UINT32_MAX__;
     }
     ret = stb.st_mode;
     old = stb.st_mode;
@@ -189,7 +187,7 @@ __mode_t parse_perms(char* perms, char* filename, int verbosity){
 
         if(!read && !write && !execute){
             fprintf(stderr, "Invalid input\n");
-            exit(-1);
+            return __UINT32_MAX__;
         }
 
         switch (input[0]){
@@ -213,13 +211,26 @@ __mode_t parse_perms(char* perms, char* filename, int verbosity){
                 break;
         }
 
+        __mode_t temp = 0, sec_temp = 0;
         if(mode == '+'){
-            ret |= get_perms(read, write, execute, mode, target, filename);
+            temp = get_perms(read, write, execute, mode, target, filename);
+            if(temp == __UINT32_MAX__) return __UINT32_MAX__;
+            ret |= temp;
         } else if(mode == '='){
-            ret &= ~(get_perms(1, 1, 1, '+', target, filename));
-            ret |= get_perms(read, write, execute, '+', target, filename);
+
+            temp = get_perms(1, 1, 1, '+', target, filename);
+            if(temp == __UINT32_MAX__) return __UINT32_MAX__;
+            
+            sec_temp = get_perms(read, write, execute, '+', target, filename);
+            if(sec_temp == __UINT32_MAX__) return __UINT32_MAX__;
+
+            ret &= ~(temp);
+            ret |= sec_temp;
         } else {
-            ret &= get_perms(read, write, execute, mode, target, filename);
+            temp = get_perms(read, write, execute, mode, target, filename);
+            if(temp == __UINT32_MAX__) return __UINT32_MAX__;
+
+            ret &= temp;
         }
 
         input = strtok(NULL, " ");
@@ -265,6 +276,7 @@ __mode_t get_perms(unsigned int r, unsigned int w, unsigned int x, char op, char
         struct stat stb;
         if(stat(filename, &stb) != 0){	//get permissions
             perror("Stat");
+            return __UINT32_MAX__;
         }
         ret = stb.st_mode;
         for(int i = 0; i < 3; i++){
@@ -276,7 +288,7 @@ __mode_t get_perms(unsigned int r, unsigned int w, unsigned int x, char op, char
     return ret;
 }
 
-void chmod_dir(char* cmd, char* dir_name, int verbosity, int argc, char *argv[], char*envp[]){
+int recursive_xmod(char* cmd, char* dir_name, int verbosity, int argc, char *argv[]){
     //filename points to a dir
     char copy[100];
     char filename[100];
@@ -286,7 +298,7 @@ void chmod_dir(char* cmd, char* dir_name, int verbosity, int argc, char *argv[],
     if(d) {
         if(xmod(cmd, dir_name, verbosity) != 0){
             perror("chmod");
-            exit(1);
+            return 1;
         }
 
         while((dir = readdir(d)) != NULL){
@@ -298,12 +310,13 @@ void chmod_dir(char* cmd, char* dir_name, int verbosity, int argc, char *argv[],
 
                 if(xmod(cmd, filename, verbosity) != 0){
                     perror("chmod");
+                    return 1;
                 }
             } else if (dir->d_type == DT_DIR && strcmp(dir->d_name, ".") != 0 && strcmp(dir->d_name, "..") != 0){
                 int pid;
                 if((pid = fork()) < 0){
                     perror("fork");
-                    return;
+                    return 1;
                 }
                 if(pid == 0){
 
@@ -312,15 +325,19 @@ void chmod_dir(char* cmd, char* dir_name, int verbosity, int argc, char *argv[],
                     strcat(filename, dir->d_name);
 
                     argv[argc - 1] = filename;
-                    if (execv("xmod", argv) == -1)
+                    if (execv("xmod", argv) == -1) {
                         perror("execve");
-                    return chmod_dir(copy, filename, verbosity, argc, argv, envp); //just runs if error on execve
-                } else {
+                        return 1;
+                    }
+                }  else {
                     wait(0);
                 }
             }
         }
+        return 0;
     }
+
+    return 1;
 }
 
 /**
@@ -401,7 +418,7 @@ int set_handlers(){
 }
 
 
-void get_options(int* verbose, int* recursive, int* index, int argc, char* argv[]){
+int get_options(int* verbose, int* recursive, int* index, int argc, char* argv[]){
     int option;
     while ((option = getopt(argc, argv, "vcR")) != -1)
     {
@@ -418,41 +435,44 @@ void get_options(int* verbose, int* recursive, int* index, int argc, char* argv[
             case '?':
                 if (isprint(optopt)) {
                     fprintf(stderr, "Unknown option '-%c'.\n", optopt);
-                    exit(-1);
+                    return 1;
                 }
             default:
-                abort();
+                return 1;
         }
     }
 
     *index = optind;
+
+    return 0;
 }
 
 void get_input(char* input, char* in, char* file_name, int index, int argc, char* argv[]){
     if (input[0] == '0'){  //get input 
         in = formatOctal(input);
     } else {
+        strcpy(in, "");
         for (int i = index; i < argc - 1; i++){ //get all inputs u=rwx g=rx o=wx
             strcat(in, argv[i]);
             strcat(in, " ");
-            //printf("String: %s\n", in);
         }
     }
 }
 
-int xmod(char* in, char* filename, int verbosity){
-    __mode_t mode = parse_perms(in, filename, verbosity);
-        if(chmod(filename, mode) != 0){
-            perror("chmod");
-            return 1;
-        }
+int xmod(char* in, char* file_name, int verbosity){
+    __mode_t mode;
+    if((mode = parse_perms(in, file_name, verbosity)) == __UINT32_MAX__) return 1;
+    if(chmod(file_name, mode) != 0){
+        perror("chmod");
+        return 1;
+    }
     return 0;
 }
 
 
-int run_xmod(char* in, char* filename, int verbosity, int recursive, int argc, char* argv[], char* envp[]){
+int run_xmod(char* in, char* file_name, int verbosity, int recursive, int argc, char* argv[]){
     struct stat st;
-    if(stat(filename, &st) != 0) {
+    if(stat(file_name, &st) != 0) {
         perror("stat");
         return 1;
     }
@@ -461,7 +481,9 @@ int run_xmod(char* in, char* filename, int verbosity, int recursive, int argc, c
 
     if (recursive) {
         if ((arg_info & __S_IFDIR) != 0) {
-            chmod_dir(in, filename, verbosity, argc, argv, envp);
+            if(recursive_xmod(in, file_name, verbosity, argc, argv)){
+                return 1;
+            }
             return 0;
         } else {
             fprintf(stderr, "Invalid option, not a directory.\n");
@@ -469,7 +491,7 @@ int run_xmod(char* in, char* filename, int verbosity, int recursive, int argc, c
         }
     } else {
         nftot += 1;
-        if(xmod(in, filename, verbosity) != 0){
+        if(xmod(in, file_name, verbosity) != 0){
             perror("chmod");
             return 1;
         }
@@ -479,40 +501,41 @@ int run_xmod(char* in, char* filename, int verbosity, int recursive, int argc, c
 }
 
 int main(int argc, char* argv[], char* envp[]){
-        
-    FILE* logFile;
+    char exit_code = '0';
 
-    log_start();
-    set_log_file(logFile);
-
-
+    // verificar se há argumentos suficientes para correr o programa
     if(argc <= 2){
         fprintf(stdout, "Invalid number of arguments\n");
-        exit(1);
+        exit_code = '1';
     }
-
-
+    
+    log_start();
+    
     if(set_handlers()){
-        return 1;
+        exit_code = '1';
+    } else {
+        write_to_log(0, "argv");
+        
+
+        int verbosity, recursive, index;
+        if(get_options(&verbosity, &recursive, &index, argc, argv)){
+            exit_code = 1;
+        } else {
+            char *input = argv[index];
+            char *in = (char *) malloc (18 * sizeof(char));
+            char *file_name = argv[argc - 1];
+            get_input(input, in, file_name, index, argc, argv);
+
+            if(run_xmod(in, file_name, verbosity, recursive, argc, argv) != 0){
+                exit_code = '1';
+            }
+        }
     }
 
-    log_file = getenv("LOG_FILENAME");
-    write_to_log(0, "argv");
-    
-    int verbosity, recursive, index;
-    get_options(&verbosity, &recursive, &index, argc, argv);
-    
-    char *input = argv[index];
-    char *in = (char *) malloc (18 * sizeof(char));
-    char *filename = argv[argc - 1];
-    get_input(input, in, filename, index, argc, argv);
-
-    if(run_xmod(in, filename, verbosity, recursive, argc, argv, envp) != 0){
-        return 1;
-    }
-    
-    double value = get_running_time();
-    fprintf(stdout, "RUNNING TIME: %f\n", value);
-    return 0;
+    /*write_to_log(PROC_EXIT, &exit_code);
+    if(getpid() == atoi(getenv(ELDEST_PID))) wait(0);
+    return atoi(exit_code);
+    */
+   return 0;
 }
 
