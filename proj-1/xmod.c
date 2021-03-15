@@ -16,9 +16,10 @@
 #define START_TIME "START_TIME"
 
 
-struct timespec startTime, endTime;
-long int timeStart, timeEnd;
+struct timespec start_time, end_time;
+long int time_start, time_end;
 static char* log_file;
+FILE* logFile;
 unsigned int nftot = 0;
 unsigned int nfmod = 0;
 
@@ -27,19 +28,19 @@ int xmod(char* in, char* file_name, int verbosity);
 __mode_t parse_perms(char* perms, char* filename, int verbosity);
 __mode_t get_perms(unsigned int r, unsigned int w, unsigned int x, char op, char target, char* filename);
 void chmod_dir(char* cmd, char* dir_name, int verbosity, int argc, char* argv[], char* envp[]);
-char * formatOctal(char *octal);
-void strmode(__mode_t mode, char * buf);
+char * format_octal(char *octal);
+void str_mode(__mode_t mode, char * buf);
 long int get_running_time();
-void set_log_file(FILE* logFile);
+void set_log_file();
 void log_start();
 
 
 /**
  * Gets the log_filename output file into log_file global variable
  * Opens the file of log_filename.
- *@param FILE* variable which will have the file of log_filename
+ * variable which will have the file of log_filename is the global variable logFile
  */
-void set_log_file(FILE* logFile) {
+void set_log_file() {
     log_file = getenv(LOG_FILENAME);
 
     if (log_file) {
@@ -51,6 +52,9 @@ void set_log_file(FILE* logFile) {
             logFile = freopen(log_file, "a", logFile);    //reopen to add content
         }
     }
+    else{
+        fprintf(stdout, "Didnt find any LOG_FILENAME environment variable\n");
+    }
 }
 
 /**
@@ -61,17 +65,17 @@ void log_start() {
     
     if (getenv(ELDEST_PID)) {  // if the env variable already exists
         //fprintf(stdout, "ELDEST_PIT: %d, START_TIME: %ld, LOG_FILENAME: %s\n", atoi(getenv(ELDEST_PID)), atol(getenv(START_TIME)), getenv(LOG_FILENAME));
-        timeStart = atol(getenv(START_TIME));
+        time_start = atol(getenv(START_TIME));
     } 
     else {
         //fprintf(stdout, "setting up env variable\n");
-        clock_gettime(CLOCK_REALTIME, &startTime);
-        long int timeStart = startTime.tv_sec * 1000 + startTime.tv_nsec/(pow(10, 6));    //time in ms
+        clock_gettime(CLOCK_REALTIME, &start_time);
+        time_start = start_time.tv_sec * 1000 + start_time.tv_nsec/(pow(10, 6));    //time in ms
 
         char pid[15];
         char stTime[50];
         snprintf(pid, sizeof(pid), "%d", getpid());
-        snprintf(stTime, sizeof(stTime) , "%ld", timeStart);
+        snprintf(stTime, sizeof(stTime) , "%ld", time_start);
 
         int stat = setenv(START_TIME, stTime, 0);           //store the starting time on environment variable
         if (stat == -1) {
@@ -124,33 +128,31 @@ void sig_handler(int signo) {
 }
 
 void write_to_log(unsigned int event, char* info) {
-    if (*log_file == NULL)
+    if (log_file == NULL)
         return;
 
-     FILE* fd = fopen(log_file, "w");
      char str[100];
      switch (event)
      {
      case 0:
-         sprintf(str, "%f ; %d ; PROC_CREAT ; %s\n", getRunningTime(), getpid(), "1234");
+         sprintf(str, "%ld ; %d ; PROC_CREAT ; %s\n", get_running_time() - time_start, getpid(), "1234");
          break;
      case 1:
-        sprintf(str, "%f, %d ; PROC_EXIT ; %s\n", getRunningTime(), getpid(), "test");
+        sprintf(str, "%ld ; %d ; PROC_EXIT ; %s\n", get_running_time() - time_start, getpid(), "test");
         break;
     case 2:
-        sprintf(str, "%f ; %d ; SIGNAL_RECV ; %s\n", getRunningTime(), getpid(), "test");
+        sprintf(str, "%ld ; %d ; SIGNAL_RECV ; %s\n", get_running_time() - time_start, getpid(), "test");
         break;
     case 3:
-        sprintf(str, "%f ; %d ; SIGNAL_SENT ; %s\n", getRunningTime(), getpid(), "test");
+        sprintf(str, "%ld ; %d ; SIGNAL_SENT ; %s\n", get_running_time() - time_start, getpid(), "test");
         break;
     case 4:
-        sprintf(str, "%f ; %d ; FILE_MODF ; %s\n", getRunningTime(), getpid(), "test");
+        sprintf(str, "%ld ; %d ; FILE_MODF ; %s\n", get_running_time() - time_start, getpid(), "test");
      default:
          break;
      }
 
-    fputs(str, fd);
-    fclose(fd);
+    fputs(str, logFile);
 }
 
 /**
@@ -159,8 +161,8 @@ void write_to_log(unsigned int event, char* info) {
 */
 long int get_running_time() {
     //sleep(1);
-    clock_gettime(CLOCK_REALTIME, &endTime);
-    long int delta_ms = startTime.tv_sec * 1000 + startTime.tv_nsec/(pow(10, 6));    //time in ms
+    clock_gettime(CLOCK_REALTIME, &end_time);
+    long int delta_ms = end_time.tv_sec * 1000 + end_time.tv_nsec/(pow(10, 6));    //time in ms
     //fprintf(stdout, "Elapsed time(ms): %f", delta_ms);
     return delta_ms;
 }
@@ -188,7 +190,7 @@ __mode_t parse_perms(char* perms, char* filename, int verbosity){
         }
 
         if(!read && !write && !execute){
-            fprintf(stderr, "Invalid input\n");
+            fprintf(stderr, "Invalid input: %s\n", input);
             exit(-1);
         }
 
@@ -228,8 +230,8 @@ __mode_t parse_perms(char* perms, char* filename, int verbosity){
 
     char oldMode[15]; 
     char newMode[15];
-    strmode(old, oldMode);
-    strmode(ret, newMode);
+    str_mode(old, oldMode);
+    str_mode(ret, newMode);
 
     if (ret == old && verbosity == 1)
         printf("mode of '%s' retained as 0%o (%s)\n", filename, ret % 512, oldMode);
@@ -326,7 +328,7 @@ void chmod_dir(char* cmd, char* dir_name, int verbosity, int argc, char *argv[],
 /**
  * Converts octal input to format "u=--- g=--- o=---", where "-" can be 'r' 'w' or 'x'
  */
-char * formatOctal(char *octal){
+char * format_octal(char *octal){
     char* result = (char *) malloc( 18*sizeof(char));
     strcat(result, "u=");
     for (int i = 1; i < strlen(octal); i++){
@@ -371,7 +373,7 @@ char * formatOctal(char *octal){
 /**
  * Converts the mode of permissions to format rwxrwxrwx
  */
-void strmode(__mode_t mode, char * buf) {
+void str_mode(__mode_t mode, char * buf) {
   const char chars[] = "rwxrwxrwx";
   for (size_t i = 0; i < 9; i++) {
     buf[i] = (mode & (1 << (8-i))) ? chars[i] : '-';
@@ -430,8 +432,10 @@ void get_options(int* verbose, int* recursive, int* index, int argc, char* argv[
 
 void get_input(char* input, char* in, char* file_name, int index, int argc, char* argv[]){
     if (input[0] == '0'){  //get input 
-        in = formatOctal(input);
-    } else {
+        in = format_octal(input);
+    } 
+    else {
+        strcpy(in, "");
         for (int i = index; i < argc - 1; i++){ //get all inputs u=rwx g=rx o=wx
             strcat(in, argv[i]);
             strcat(in, " ");
@@ -479,12 +483,10 @@ int run_xmod(char* in, char* filename, int verbosity, int recursive, int argc, c
 }
 
 int main(int argc, char* argv[], char* envp[]){
-        
-    FILE* logFile;
-
+    
     log_start();
-    set_log_file(logFile);
-
+    set_log_file();
+    
 
     if(argc <= 2){
         fprintf(stdout, "Invalid number of arguments\n");
@@ -503,16 +505,21 @@ int main(int argc, char* argv[], char* envp[]){
     get_options(&verbosity, &recursive, &index, argc, argv);
     
     char *input = argv[index];
-    char *in = (char *) malloc (18 * sizeof(char));
+    char *in = (char *) malloc (30 * sizeof(char));
     char *filename = argv[argc - 1];
     get_input(input, in, filename, index, argc, argv);
 
     if(run_xmod(in, filename, verbosity, recursive, argc, argv, envp) != 0){
+        write_to_log(1, "argv");
+        fclose(logFile);
         return 1;
     }
-    
-    double value = get_running_time();
-    fprintf(stdout, "RUNNING TIME: %f\n", value);
+    /*    
+    long int value = get_running_time() - time_start;
+    fprintf(stdout, "RUNNING TIME: %ld\n", value);
+    */
+    write_to_log(1, "argv");
+    fclose(logFile);
     return 0;
 }
 
