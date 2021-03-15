@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 0 ; 5211 ; PROC_CREAT ; ./xmod -vR g=rx o=rx test
 2003 ; 5214 ; PROC_CREAT ; ./xmod -vR g=rx o=rx test/test4
 4005 ; 5216 ; PROC_CREAT ; ./xmod -vR g=rx o=rx test/test4/test7
@@ -17,3 +18,11 @@
 5324 ; 5211 ; PROC_EXIT ; 1
 5324 ; 5214 ; SIGNAL_RECV ; SIGUSR2
 5324 ; 5214 ; PROC_EXIT ; 1
+=======
+0 ; 9901 ; PROC_CREAT ; ./xmod -vR a=rwx xmodtest
+2003 ; 9902 ; PROC_CREAT ; ./xmod -vR a=rwx xmodtest/xmodtest2
+4005 ; 9904 ; PROC_CREAT ; ./xmod -vR a=rwx xmodtest/xmodtest2/subfolder
+6009 ; 9904 ; PROC_EXIT ; 0
+6009 ; 9902 ; PROC_EXIT ; 0
+6009 ; 9901 ; PROC_EXIT ; 0
+>>>>>>> 3e6546abe0ca1713a64db18457ae1f80b88eeeb1
