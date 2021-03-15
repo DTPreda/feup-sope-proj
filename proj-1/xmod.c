@@ -239,8 +239,8 @@ __mode_t parse_perms(char* perms, char* filename, int verbosity){
 
     char oldMode[15]; 
     char newMode[15];
-    strmode(old, oldMode);
-    strmode(ret, newMode);
+    str_mode(old, oldMode);
+    str_mode(ret, newMode);
 
     if (ret == old && verbosity == 1)
         printf("mode of '%s' retained as 0%o (%s)\n", filename, ret % 512, oldMode);
@@ -343,7 +343,7 @@ int recursive_xmod(char* cmd, char* dir_name, int verbosity, int argc, char *arg
 /**
  * Converts octal input to format "u=--- g=--- o=---", where "-" can be 'r' 'w' or 'x'
  */
-char * formatOctal(char *octal){
+char * format_octal(char *octal){
     char* result = (char *) malloc( 18*sizeof(char));
     strcat(result, "u=");
     for (int i = 1; i < strlen(octal); i++){
@@ -388,7 +388,7 @@ char * formatOctal(char *octal){
 /**
  * Converts the mode of permissions to format rwxrwxrwx
  */
-void strmode(__mode_t mode, char * buf) {
+void str_mode(__mode_t mode, char * buf) {
   const char chars[] = "rwxrwxrwx";
   for (size_t i = 0; i < 9; i++) {
     buf[i] = (mode & (1 << (8-i))) ? chars[i] : '-';
