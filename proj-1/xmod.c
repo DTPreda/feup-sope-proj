@@ -133,17 +133,16 @@ void sig_handler(int signo) {
         log_file = fopen(log_file_name, "a");
         if (signo == SIGINT){
             char sig_received[15];
-            sprintf(sig_received, "SIGINT\n");
+            sprintf(sig_received, "SIGINT");
             write_to_log(SIGNAL_RECV, sig_received);
 
             int option;
-            fprintf(stdout,"\nSIGINT RECEIVED. I am the process with a PID of %d\n", getpid());
             char msg1[15], msg2[15];
-            sprintf(msg1, "SIGUSR1 : %d", getpgrp());
+            sprintf(msg1, "SIGUSR1 : %d", getpid());
             sprintf(msg2, "SIGUSR2 : %d", getpgrp());
 
             write_to_log(SIGNAL_SENT, msg1);
-            killpg(getpgrp(), SIGUSR1);
+            kill(getpid(), SIGUSR1);
 
             wait(-1);
             fprintf(stdout, "Would you wish to proceed? [Y/N]\n");
@@ -167,7 +166,7 @@ void sig_handler(int signo) {
         }
         else if (signo == SIGUSR1) {
             char sig_received[15];
-            sprintf(sig_received, "SIGUSR1\n");
+            sprintf(sig_received, "SIGUSR1");
             write_to_log(SIGNAL_RECV, sig_received);
             
             fprintf(stdout, "%i ; %s ; %i ; %i\n", getpid(), "FILENAME", 0, 0);
@@ -175,10 +174,12 @@ void sig_handler(int signo) {
         } 
         else if (signo == SIGUSR2){
             char sig_received[15];
-            sprintf(sig_received, "SIGUSR2\n");
+            sprintf(sig_received, "SIGUSR2");
             write_to_log(SIGNAL_RECV, sig_received);
 
             write_to_log(PROC_EXIT, "1");
+
+            if(getpid() == atoi(getenv(ELDEST_PID))) wait(0);
             exit(1);
         }
         else{
@@ -573,7 +574,7 @@ int main(int argc, char* argv[], char* envp[]){
         log_start();
         write_to_log(PROC_CREATE, str);
 
-        int verbosity, recursive, index;
+        int verbosity = 0, recursive = 0, index;
         if(get_options(&verbosity, &recursive, &index, argc, argv)){
             strcpy(exit_code, "1");
         } else {
@@ -587,7 +588,6 @@ int main(int argc, char* argv[], char* envp[]){
             }
         }
     }
-
 
     write_to_log(PROC_EXIT, exit_code);
     if(getpid() == atoi(getenv(ELDEST_PID))) wait(0);
