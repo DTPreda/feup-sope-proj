@@ -12,7 +12,7 @@
 #include <math.h>
 
 #define LOG_FILENAME "LOG_FILENAME"
-#define ELDEST_PID "ELDEST_PID" //can be switched getpgrp()
+#define FIRST_PROCESS_PID getpgrp()
 #define START_TIME "START_TIME"
 
 #define PROC_CREATE 0
@@ -45,16 +45,16 @@ void format_argv(int argc, char* argv[], char* str);
  */
 int log_start() {
     
-    if (getenv(ELDEST_PID)) {  // if the env variable already exists
+    if (getpid() != FIRST_PROCESS_PID) {  // if the process is not the first one to be created => START_TIME will already have been created
         time_start = atol(getenv(START_TIME));
     } 
     else {
         clock_gettime(CLOCK_REALTIME, &start_time);
         time_start = start_time.tv_sec * 1000 + start_time.tv_nsec/(pow(10, 6));    //time in ms
 
-        char pid[15];
+        //char pid[15];
         char st_time[50];
-        snprintf(pid, sizeof(pid), "%d", getpid());
+        //snprintf(pid, sizeof(pid), "%d", getpid());
         snprintf(st_time, sizeof(st_time) , "%ld", time_start);
 
         int stat = setenv(START_TIME, st_time, 0);           //store the starting time on environment variable
@@ -63,11 +63,14 @@ int log_start() {
             return 1;
         } 
 
-        stat = setenv(ELDEST_PID, pid, 0);                  //store the eldest_pid on environment variable
+        /*
+        stat = setenv(FIRST_PROCESS_PID, pid, 0);                  //store the eldest_pid on environment variable
         if (stat == -1) {
             fprintf(stderr, "Error setting environment variable\n");
             return 1;
         }
+
+        */
 
         char* log_file_name = getenv(LOG_FILENAME);
 
@@ -131,7 +134,7 @@ void sig_handler(int signo) {
         
         fprintf(stdout, "%i ; %s ; %i ; %i\n", getpid(), "FILENAME", 0, 0);    
 
-        if(getpid() == getpgrp()){      //The eldest controls the signals
+        if(getpid() == FIRST_PROCESS_PID){      //The eldest controls the signals
             sleep(0.25);
             int option;
             char msg1[15], msg2[15];
@@ -168,7 +171,7 @@ void sig_handler(int signo) {
         sprintf(sig_received, "SIGUSR1");
         write_to_log(SIGNAL_RECV, sig_received);
 
-        if(getpid() == atoi(getenv(ELDEST_PID))) wait(0);
+        if(getpid() == FIRST_PROCESS_PID) wait(0);
         write_to_log(PROC_EXIT, "1");
         exit(1);
     } 
@@ -583,11 +586,12 @@ int main(int argc, char* argv[], char* envp[]){
             if(run_xmod(in, file_name, verbosity, recursive, argc, argv) != 0){
                 strcpy(exit_code, "1");
             }
+            free(in);
         }
     }
 
     write_to_log(PROC_EXIT, exit_code);
-    if(getpid() == atoi(getenv(ELDEST_PID))) wait(0);
+    if(getpid() == FIRST_PROCESS_PID) wait(0);
 
     free(str);
     return atoi(exit_code);
