@@ -118,68 +118,64 @@ void write_to_log(unsigned int event, char* info) {
 
 }
 
+/**
+ * Global Handler of signals, it writes into a file the information 
+ * about the signal received
+ */ 
 void sig_handler(int signo) {
-    char* log_file_name = getenv(LOG_FILENAME);
 
-    if (log_file_name != NULL) {
-        FILE* log_file;
+    if (signo == SIGINT) {
+        char sig_received[15];
+        sprintf(sig_received, "SIGINT");
+        write_to_log(SIGNAL_RECV, sig_received);
+        
+        fprintf(stdout, "%i ; %s ; %i ; %i\n", getpid(), "FILENAME", 0, 0);    
 
-        log_file = fopen(log_file_name, "a");
-        if (signo == SIGINT) {
-            char sig_received[15];
-            sprintf(sig_received, "SIGINT");
-            write_to_log(SIGNAL_RECV, sig_received);
+        if(getpid() == getpgrp()){
+            sleep(0.25);
+            int option;
+            char msg1[15], msg2[15];
+            sprintf(msg1, "SIGUSR1 : %d", getpid());
+            sprintf(msg1, "SIGUSR2 : %d", getpid());
 
-            fprintf(stdout, "%i ; %s ; %i ; %i\n", getpid(), "FILENAME", 0, 0);
-            
-
-            if(getpid() == getpgrp()){
-                sleep(0.25);
-                int option;
-                char msg1[15], msg2[15];
-                sprintf(msg1, "SIGUSR1 : %d", getpid());
-                sprintf(msg1, "SIGUSR2 : %d", getpid());
-
-                fprintf(stdout, "Would you wish to proceed? [Y/N]\n");
-                option = getchar();
-                switch (option){
-                    case 'Y':
-                    case 'y':
-                        fprintf(stdout, "Resuming process \n");
-                        killpg(getpgrp(), SIGUSR2);
-                        write_to_log(SIGNAL_SENT, msg2);
-                        break;
-                    case 'N':
-                    case 'n':
-                        write_to_log(SIGNAL_SENT, msg1);
-                        killpg(getpgrp(), SIGUSR1);
-                        break;
-                    default:
-                        fprintf(stdout, "Unknown option, aborting program\n");
-                        write_to_log(SIGNAL_SENT, msg1);
-                        killpg(getpgrp(), SIGUSR1);
-                        break;
-                }
-            } else {
-                pause();
+            fprintf(stdout, "Would you wish to proceed? [Y/N]\n");
+            option = getchar();
+            switch (option){
+                case 'Y':
+                case 'y':
+                    fprintf(stdout, "Resuming process \n");
+                    killpg(getpgrp(), SIGUSR2);
+                    write_to_log(SIGNAL_SENT, msg2);
+                    break;
+                case 'N':
+                case 'n':
+                    write_to_log(SIGNAL_SENT, msg1);
+                    killpg(getpgrp(), SIGUSR1);
+                    break;
+                default:
+                    fprintf(stdout, "Unknown option, aborting program\n");
+                    write_to_log(SIGNAL_SENT, msg1);
+                    killpg(getpgrp(), SIGUSR1);
+                    break;
             }
+        } else {
+            pause();
         }
-        else if (signo == SIGUSR1) {
-            char sig_received[15];
-            sprintf(sig_received, "SIGUSR1");
-            write_to_log(SIGNAL_RECV, sig_received);
-
-            write_to_log(PROC_EXIT, "1");
-
-            if(getpid() == atoi(getenv(ELDEST_PID))) wait(0);
-            exit(1);
-        } else if (signo == SIGUSR2) {
-
-        }
-        fclose(log_file);
     }
+    else if (signo == SIGUSR1) {
+        char sig_received[15];
+        sprintf(sig_received, "SIGUSR1");
+        write_to_log(SIGNAL_RECV, sig_received);
 
+        write_to_log(PROC_EXIT, "1");
+
+        if(getpid() == atoi(getenv(ELDEST_PID))) wait(0);
+        exit(1);
+    } else if (signo == SIGUSR2) {
+
+    }
 }
+
 
 
 /**
