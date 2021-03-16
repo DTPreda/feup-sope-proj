@@ -320,15 +320,21 @@ __mode_t get_perms(unsigned int r, unsigned int w, unsigned int x, char op, char
     return ret;
 }
 
+void concatenate_dir_file(char* dir, char* file_name, char* ret){
+    strcpy(ret, "");
+    strcat(ret, dir); strcat(ret, "/"); // filename = dir_name/
+    strcat(ret, file_name);
+}
+
 int recursive_xmod(char* cmd, char* dir_name, int verbosity, int argc, char *argv[]){
-    //filename points to a dir
     sleep(2);
     char copy[100];
-    char filename[100];
+    char file_name[100];
     DIR* d;
     struct dirent *dir;
     d = opendir(dir_name);
     if(d) {
+        
         if(xmod(cmd, dir_name, verbosity) != 0){
             perror("chmod");
             return 1;
@@ -338,11 +344,9 @@ int recursive_xmod(char* cmd, char* dir_name, int verbosity, int argc, char *arg
             strcpy(copy, cmd);
             if(dir->d_type == DT_REG || dir->d_type == DT_LNK) { //if it is a regular file
                 
-                strcpy(filename, "");
-                strcat(filename, dir_name); strcat(filename, "/"); // filename = dir_name/
-                strcat(filename, dir->d_name);
+                concatenate_dir_file(dir_name, dir->d_name, file_name);
 
-                if(xmod(cmd, filename, verbosity) != 0){
+                if(xmod(cmd, file_name, verbosity) != 0){
                     perror("chmod");
                     return 1;
                 }
@@ -354,11 +358,9 @@ int recursive_xmod(char* cmd, char* dir_name, int verbosity, int argc, char *arg
                 }
                 if(pid == 0){
 
-                    strcpy(filename, ""); 
-                    strcat(filename, dir_name); strcat(filename, "/");
-                    strcat(filename, dir->d_name);
+                    concatenate_dir_file(dir_name, dir->d_name, file_name);
 
-                    argv[argc - 1] = filename;
+                    argv[argc - 1] = file_name;
                     if (execv("xmod", argv) == -1) {
                         perror("execve");
                         return 1;
@@ -373,6 +375,7 @@ int recursive_xmod(char* cmd, char* dir_name, int verbosity, int argc, char *arg
 
     return 1;
 }
+
 
 /**
  * Converts octal input to format "u=--- g=--- o=---", where "-" can be 'r' 'w' or 'x'
