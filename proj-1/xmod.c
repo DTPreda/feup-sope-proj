@@ -131,12 +131,12 @@ void sig_handler(int signo) {
         
         fprintf(stdout, "%i ; %s ; %i ; %i\n", getpid(), "FILENAME", 0, 0);    
 
-        if(getpid() == getpgrp()){
+        if(getpid() == getpgrp()){      //The eldest controls the signals
             sleep(0.25);
             int option;
             char msg1[15], msg2[15];
             sprintf(msg1, "SIGUSR1 : %d", getpid());
-            sprintf(msg1, "SIGUSR2 : %d", getpid());
+            sprintf(msg2, "SIGUSR2 : %d", getpid());
 
             fprintf(stdout, "Would you wish to proceed? [Y/N]\n");
             option = getchar();
@@ -144,8 +144,8 @@ void sig_handler(int signo) {
                 case 'Y':
                 case 'y':
                     fprintf(stdout, "Resuming process \n");
-                    killpg(getpgrp(), SIGUSR2);
                     write_to_log(SIGNAL_SENT, msg2);
+                    killpg(getpgrp(), SIGUSR2);
                     break;
                 case 'N':
                 case 'n':
@@ -158,7 +158,8 @@ void sig_handler(int signo) {
                     killpg(getpgrp(), SIGUSR1);
                     break;
             }
-        } else {
+        } 
+        else {
             pause();
         }
     }
@@ -167,12 +168,14 @@ void sig_handler(int signo) {
         sprintf(sig_received, "SIGUSR1");
         write_to_log(SIGNAL_RECV, sig_received);
 
-        write_to_log(PROC_EXIT, "1");
-
         if(getpid() == atoi(getenv(ELDEST_PID))) wait(0);
+        write_to_log(PROC_EXIT, "1");
         exit(1);
-    } else if (signo == SIGUSR2) {
-
+    } 
+    else if (signo == SIGUSR2) {
+        char sig_received[15];
+        sprintf(sig_received, "SIGUSR2");
+        write_to_log(SIGNAL_RECV, sig_received);
     }
 }
 
