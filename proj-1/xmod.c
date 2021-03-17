@@ -121,7 +121,6 @@ int run_xmod(char* in, char* file_name, int verbosity, int recursive, int argc, 
     }
 
     __mode_t arg_info = st.st_mode;
-    strcpy(curr_file, argv[argc - 1]);
     if (recursive) {
         if ((arg_info & __S_IFDIR) != 0) {
             if (recursive_xmod(in, file_name, verbosity, argc, argv)) {

@@ -1,5 +1,5 @@
-#ifndef INOUTPUT_H_
-#define INOUTPUT_H_
+#ifndef _INOUTPUT_H_
+#define _INOUTPUT_H_
 
 int parse_argv(int argc, char* argv[]);
 int parse_perm_arg_octal(char* arg);
@@ -11,4 +11,4 @@ void get_input(char* input, char* in, char* file_name, int index, int argc, char
 void print_changes(__mode_t new_mode, __mode_t old_mode, int verbosity, char* file_name);
 void str_mode(__mode_t mode, char * buf);
 
-#endif  // INOUTPUT_H_
+#endif  // _INOUTPUT_H_

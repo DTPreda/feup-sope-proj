@@ -207,11 +207,14 @@ void print_changes(__mode_t new_mode, __mode_t old_mode, int verbosity, char* fi
     char new_mode_str[15];
     str_mode(old_mode, old_mode_str);
     str_mode(new_mode, new_mode_str);
-
-    if (new_mode == old_mode && verbosity == 1)
+    if (new_mode == old_mode && verbosity == 1) {
         printf("mode of '%s' retained as 0%o (%s)\n", file_name, new_mode % 512, old_mode_str);
-    else if (new_mode != old_mode && verbosity)
+    } else if (new_mode != old_mode && verbosity) {
+        char str[100];
+        snprintf(str, sizeof(str), "%s : %o : %o", file_name, old_mode % 512, new_mode % 512);
+        write_to_log(FILE_MODF, str);
         printf("mode of '%s' changed from 0%o (%s) to 0%o (%s)\n", file_name, old_mode % 512, old_mode_str, new_mode % 512, new_mode_str);
+    }
 }
 
 
