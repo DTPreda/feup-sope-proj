@@ -52,9 +52,7 @@ int log_start() {
         clock_gettime(CLOCK_REALTIME, &start_time);
         time_start = start_time.tv_sec * 1000 + start_time.tv_nsec/(pow(10, 6));    //time in ms
 
-        //char pid[15];
         char st_time[50];
-        //snprintf(pid, sizeof(pid), "%d", getpid());
         snprintf(st_time, sizeof(st_time) , "%ld", time_start);
 
         int stat = setenv(START_TIME, st_time, 0);           //store the starting time on environment variable
@@ -62,15 +60,6 @@ int log_start() {
             fprintf(stderr, "Error setting environment variable\n");
             return 1;
         } 
-
-        /*
-        stat = setenv(FIRST_PROCESS_PID, pid, 0);                  //store the eldest_pid on environment variable
-        if (stat == -1) {
-            fprintf(stderr, "Error setting environment variable\n");
-            return 1;
-        }
-
-        */
 
         char* log_file_name = getenv(LOG_FILENAME);
 
@@ -132,7 +121,7 @@ void sig_handler(int signo) {
         sprintf(sig_received, "SIGINT");
         write_to_log(SIGNAL_RECV, sig_received);
         
-        fprintf(stdout, "%i ; %s ; %i ; %i\n", getpid(), "FILENAME", 0, 0);    
+        fprintf(stdout, "%i ; %s ; %i ; %i\n", getpid(), "FILENAME", nftot, nfmod);    
 
         if(getpid() == FIRST_PROCESS_PID){      //The eldest controls the signals
             sleep(0.25);
@@ -196,14 +185,12 @@ long int get_running_time() {
 
 __mode_t parse_perms(char* perms, char* filename, int verbosity){
     __mode_t ret = 0;
-    __mode_t old = 0; //to check if any change was made to the mode
     struct stat stb;
     if(stat(filename, &stb) != 0){	//get permissions
         perror("Stat");
         return __UINT32_MAX__;
     }
     ret = stb.st_mode;
-    old = stb.st_mode;
 
     char* input = strtok(perms, " ");
     for( ; input != NULL; ){
@@ -268,19 +255,6 @@ __mode_t parse_perms(char* perms, char* filename, int verbosity){
         input = strtok(NULL, " ");
     }
 
-
-    char oldMode[15]; 
-    char newMode[15];
-    str_mode(old, oldMode);
-    str_mode(ret, newMode);
-
-    if (ret == old && verbosity == 1)
-        printf("mode of '%s' retained as 0%o (%s)\n", filename, ret % 512, oldMode);
-
-    if (ret != old) {
-        if (verbosity)
-            printf("mode of '%s' changed from 0%o (%s) to 0%o (%s)\n", filename, old % 512, oldMode, ret % 512, newMode);
-    }
     return ret;
 }
 
@@ -334,15 +308,19 @@ int recursive_xmod(char* cmd, char* dir_name, int verbosity, int argc, char *arg
     struct dirent *dir;
     d = opendir(dir_name);
     if(d) {
-        
+
         if(xmod(cmd, dir_name, verbosity) != 0){
             perror("chmod");
             return 1;
         }
 
+        nftot += 1; // found dir called by argument
+
         while((dir = readdir(d)) != NULL){
+            
             strcpy(copy, cmd);
-            if(dir->d_type == DT_REG || dir->d_type == DT_LNK) { //if it is a regular file
+            if(dir->d_type == DT_REG) { //if it is a regular file
+                nftot += 1; // found a file inside the directory
                 
                 concatenate_dir_file(dir_name, dir->d_name, file_name);
 
@@ -350,6 +328,7 @@ int recursive_xmod(char* cmd, char* dir_name, int verbosity, int argc, char *arg
                     perror("chmod");
                     return 1;
                 }
+
             } else if (dir->d_type == DT_DIR && strcmp(dir->d_name, ".") != 0 && strcmp(dir->d_name, "..") != 0){
                 int pid;
                 if((pid = fork()) < 0){
@@ -365,6 +344,7 @@ int recursive_xmod(char* cmd, char* dir_name, int verbosity, int argc, char *arg
                         perror("execve");
                         return 1;
                     }
+
                 }  else {
                     wait(0);
                 }
@@ -496,13 +476,42 @@ void get_input(char* input, char* in, char* file_name, int index, int argc, char
     }
 }
 
+void print_changes(__mode_t new_mode, __mode_t old_mode, int verbosity, char* file_name){
+    char old_mode_str[15]; 
+    char new_mode_str[15];
+    str_mode(old_mode, old_mode_str);
+    str_mode(new_mode, new_mode_str);
+
+    if (new_mode == old_mode && verbosity == 1)
+        printf("mode of '%s' retained as 0%o (%s)\n", file_name, new_mode % 512, old_mode_str);
+    else if (new_mode != old_mode && verbosity)
+        printf("mode of '%s' changed from 0%o (%s) to 0%o (%s)\n", file_name, old_mode % 512, old_mode_str, new_mode % 512, new_mode_str);
+}
+
 int xmod(char* in, char* file_name, int verbosity){
-    __mode_t mode;
-    if((mode = parse_perms(in, file_name, verbosity)) == __UINT32_MAX__) return 1;
-    if(chmod(file_name, mode) != 0){
-        perror("chmod");
+    __mode_t old_mode = 0;
+    
+    struct stat stb;
+    if(stat(file_name, &stb) != 0){	//get permissions
+        perror("Stat");
         return 1;
     }
+    old_mode = stb.st_mode;
+    
+    __mode_t mode = 0;
+    if((mode = parse_perms(in, file_name, verbosity)) == __UINT32_MAX__) return 1;
+    if(mode != old_mode){
+        if(chmod(file_name, mode) != 0){
+            perror("chmod");
+            return 1;
+        }
+        nfmod += 1;
+    }
+
+
+    if(verbosity)
+        print_changes(mode, old_mode, verbosity, file_name);
+
     return 0;
 }
 
@@ -524,13 +533,7 @@ int run_xmod(char* in, char* file_name, int verbosity, int recursive, int argc, 
             return 0;
         } 
         else {
-            nftot += 1;
             //fprintf(stderr, "Invalid option, not a directory, %d.\n", recursive);
-            if(xmod(in, file_name, verbosity) != 0){
-                perror("chmod");
-                return 1;
-            }
-            nfmod += 1;
             return 1;
         }
     } 
@@ -540,7 +543,6 @@ int run_xmod(char* in, char* file_name, int verbosity, int recursive, int argc, 
             perror("chmod");
             return 1;
         }
-        nfmod += 1;
         return 0;
     }
 }
