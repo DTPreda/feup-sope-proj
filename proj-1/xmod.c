@@ -39,6 +39,7 @@ long int get_running_time();
 int log_start();
 void format_argv(int argc, char* argv[], char* str);
 int parse_argv(int argc, char* argv[]);
+void print_changes(__mode_t new_mode, __mode_t old_mode, int verbosity, char* file_name);
 
 
 /**
@@ -303,7 +304,7 @@ void concatenate_dir_file(char* dir, char* file_name, char* ret){
 }
 
 int recursive_xmod(char* cmd, char* dir_name, int verbosity, int argc, char *argv[]){
-    sleep(2);
+    //sleep(2);
     char copy[100];
     char file_name[100];
     DIR* d;
@@ -480,7 +481,7 @@ void get_input(char* input, char* in, char* file_name, int index, int argc, char
 
 void print_changes(__mode_t new_mode, __mode_t old_mode, int verbosity, char* file_name){
     if(verbosity == 3){
-        printf("neither symbolic link '%s' nor referent has been changed", file_name);
+        printf("neither symbolic link '%s' nor referent has been changed\n", file_name);
         return;
     }
 
