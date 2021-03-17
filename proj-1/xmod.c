@@ -122,10 +122,6 @@ int run_xmod(char* in, char* file_name, int verbosity, int recursive, int argc, 
     }
 
     __mode_t arg_info = st.st_mode;
-<<<<<<< HEAD
-=======
-    //strcpy(curr_file, argv[argc - 1]);
->>>>>>> 85e2f587ba2144a3db0627602a0c113010b859bc
     if (recursive) {
         if ((arg_info & __S_IFDIR) != 0) {
             if (recursive_xmod(in, file_name, verbosity, argc, argv)) {
@@ -152,8 +148,6 @@ int main(int argc, char* argv[], char* envp[]) {
     char exit_code[2];
     strcpy(exit_code, "0");
 
-    // verificar se há argumentos suficientes para correr o programa
-    // Outdated, devido às opções já não funciona como deve
     if (parse_argv(argc, argv)) {
         fprintf(stderr, "Invalid arguments.\n");
         strcpy(exit_code, "1");
