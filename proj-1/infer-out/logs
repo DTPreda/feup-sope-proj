@@ -1,0 +1,49 @@
+[46466][      debug] Loading models took 37.343ms
+[46467][      debug] Sqlite write daemon: starting up
+[46467][      debug] Sqlite write daemon: set up complete, waiting for connections
+[46466][environment] CWD = /home/krypt0/Desktop/Uni/Second-Year/Second-Semester/feup-sope-proj/proj-1
+[46466][environment] No .inferconfig file found
+[46466][environment] Project root = /home/krypt0/Desktop/Uni/Second-Year/Second-Semester/feup-sope-proj/proj-1
+[46466][environment] INFER_ARGS =   @/tmp/args.tmp.bf32e0
+[46466][environment] command line arguments:   infer run --keep-going -- make xmod
+[46466][environment] Available memory at startup: 5072 MB
+[46466][environment] Active checkers: self-in-block (C/C++/ObjC), starvation (C/C++/ObjC, Java), uninit (C/C++/ObjC), siof (C/C++/ObjC), racerd (C/C++/ObjC, Java), liveness (C/C++/ObjC), inefficient-keyset-iterator (Java), fragment-retains-view (Java), biabduction (C/C++/ObjC, Java)
+[46466][environment] Scheduler: file
+[46466][environment] Cores used: 6
+[46466][environment] Infer version v1.0.0
+[46466][environment] Copyright 2009 - present Facebook. All Rights Reserved.
+[46466][environment] 
+[46466][   progress] Capturing in make/cc mode...
+[46466][environment] Running command make with env:
+[46466][environment] (Extend((PATH /opt/infer-linux64-v1.0.0/lib/infer/infer/bin/../lib/wrappers:/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/lib/jvm/default/bin:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl:/home/krypt0/.config/bspwm/bin)(INFER_OLD_PATH /usr/local/sbin:/usr/local/bin:/usr/bin:/usr/lib/jvm/default/bin:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl:/home/krypt0/.config/bspwm/bin)))
+[46466][environment] 
+
+[46469][environment] CWD = /home/krypt0/Desktop/Uni/Second-Year/Second-Semester/feup-sope-proj/proj-1
+[46469][environment] No .inferconfig file found
+[46469][environment] Project root = /home/krypt0/Desktop/Uni/Second-Year/Second-Semester/feup-sope-proj/proj-1
+[46469][environment] INFER_ARGS =   @/tmp/args.tmp.223271
+[46469][environment] command line arguments:   gcc -Wall -c xmod.c log.c
+[46469][environment] Available memory at startup: 5039 MB
+[46469][environment] Active checkers: self-in-block (C/C++/ObjC), starvation (C/C++/ObjC, Java), uninit (C/C++/ObjC), siof (C/C++/ObjC), racerd (C/C++/ObjC, Java), liveness (C/C++/ObjC), inefficient-keyset-iterator (Java), fragment-retains-view (Java), biabduction (C/C++/ObjC, Java)
+[46469][      debug] WARNING: `clang -### <args>` returned an empty set of commands to run and no error. Will run the original command directly:
+[46469][      debug]   /opt/infer-linux64-v1.0.0/lib/infer/infer/bin/../../facebook-clang-plugins/clang/install/bin/clang -Wall -c xmod.c log.c
+[46469][      debug] 
+[46469][ extern err] Error executing:   /opt/infer-linux64-v1.0.0/lib/infer/infer/bin/../../facebook-clang-plugins/clang/install/bin/clang
+                   -Wall -c xmod.c log.c
+exited with code 127
+
+[46469][ extern err] Raised at Stdlib.input_line.scan in file "stdlib.ml", line 449, characters 14-31
+Called from Stdio__In_channel.input_line_exn in file "src/in_channel.ml" (inlined), line 68, characters 13-30
+Called from IBase__Utils.with_channel_in in file "src/base/Utils.ml", line 252, characters 11-44
+
+[46469][environment] Scheduler: file
+[46469][environment] Cores used: 6
+[46469][environment] [46466][ extern err] *** capture command failed:
+*** make xmod
+*** exited with code 2
+
+[46466][ extern err] Raised at Stdlib__scanf.bad_input in file "scanf.ml" (inlined), line 444, characters 18-40
+Called from Stdlib__scanf.scanf_bad_input in file "scanf.ml", line 1164, characters 4-75
+Called from IBase__Utils.get_available_memory_MB.scan_for_expected_output in file "src/base/Utils.ml", line 439, characters 10-86
+
+[46467][      debug] Sqlite write daemon: terminating
