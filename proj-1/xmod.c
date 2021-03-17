@@ -125,7 +125,7 @@ void sig_handler(int signo) {
             int option;
             char msg1[15], msg2[15];
             sprintf(msg1, "SIGUSR1 : %d", getpid());
-            sprintf(msg2, "SIGUSR2 : %d", getpid());
+            sprintf(msg2, "SIGCONT : %d", getpid());
 
             fprintf(stdout, "Would you wish to proceed? [Y/N]\n");
             while( (option = getchar()) == '\n') ;
@@ -134,14 +134,18 @@ void sig_handler(int signo) {
                 case 'y':
                     fprintf(stdout, "Resuming process \n");
                     write_to_log(SIGNAL_SENT, msg2);
-                    killpg(getpgrp(), SIGUSR2);
+                    killpg(getpgrp(), SIGCONT);
                     break;
                 case 'N':
                 case 'n':
+                    write_to_log(SIGNAL_SENT, msg2);
+                    killpg(getpgrp(), SIGCONT);
                     write_to_log(SIGNAL_SENT, msg1);
                     killpg(getpgrp(), SIGUSR1);
                     break;
                 default:
+                    write_to_log(SIGNAL_SENT, msg2);
+                    killpg(getpgrp(), SIGCONT);
                     fprintf(stdout, "Unknown option, aborting program\n");
                     write_to_log(SIGNAL_SENT, msg1);
                     killpg(getpgrp(), SIGUSR1);
@@ -149,7 +153,14 @@ void sig_handler(int signo) {
             }
         } 
         else {
-            pause();
+            char msg[15];
+            sprintf(msg, "SIGSTOP : %d", getpid());
+            write_to_log(SIGNAL_SENT, msg);
+            kill(getpid(), SIGSTOP);
+            
+            char sig_received[15];
+            sprintf(sig_received, "SIGCONT");
+            write_to_log(SIGNAL_RECV, sig_received);
         }
     }
     else if (signo == SIGUSR1) {
@@ -161,11 +172,6 @@ void sig_handler(int signo) {
         write_to_log(PROC_EXIT, "1");
         exit(1);
     } 
-    else if (signo == SIGUSR2) {
-        char sig_received[15];
-        sprintf(sig_received, "SIGUSR2");
-        write_to_log(SIGNAL_RECV, sig_received);
-    }
 }
 
 /**
@@ -421,12 +427,7 @@ int set_handlers(){
         perror("signal");
         return 1;
     }
-
-    if (signal(SIGUSR2, sig_handler) == SIG_ERR) {
-        perror("signal");
-        return 1;
-    }
-
+    
     return 0;
 }
 
