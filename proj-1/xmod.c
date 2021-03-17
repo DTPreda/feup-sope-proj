@@ -351,9 +351,9 @@ int recursive_xmod(char* cmd, char* dir_name, int verbosity, int argc, char *arg
                 else {
                     wait(0);
                 }
-            } else if (dir->d_type == DT_LNK && verbosity == 1){
+            } else if (dir->d_type == DT_LNK){
                 concatenate_dir_file(dir_name, dir->d_name, file_name);
-                print_changes(0, 0, 3, file_name);
+                print_changes(0, 0, 3 & (3 * (verbosity == 1)), file_name);
             }
         }
         return 0;
