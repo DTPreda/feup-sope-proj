@@ -27,6 +27,7 @@ void concatenate_dir_file(char* dir, char* file_name, char* ret) {
 }
 
 int recursive_xmod(char* cmd, char* dir_name, int verbosity, int argc, char *argv[]) {
+    fprintf(stdout, "CURR: %s\n", curr_file);
     sleep(2);
     char copy[100];
     char file_name[100];
@@ -121,6 +122,10 @@ int run_xmod(char* in, char* file_name, int verbosity, int recursive, int argc, 
     }
 
     __mode_t arg_info = st.st_mode;
+<<<<<<< HEAD
+=======
+    //strcpy(curr_file, argv[argc - 1]);
+>>>>>>> 85e2f587ba2144a3db0627602a0c113010b859bc
     if (recursive) {
         if ((arg_info & __S_IFDIR) != 0) {
             if (recursive_xmod(in, file_name, verbosity, argc, argv)) {
