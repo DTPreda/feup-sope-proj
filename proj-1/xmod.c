@@ -32,8 +32,8 @@ int xmod(char* in, char* file_name, int verbosity);
 __mode_t parse_perms(char* perms, char* filename, int verbosity);
 __mode_t get_perms(unsigned int r, unsigned int w, unsigned int x, char op, char target, char* filename);
 int recursive_xmod(char* cmd, char* dir_name, int verbosity, int argc, char* argv[]);
-char * format_octal(char *octal);
-void str_mode(__mode_t mode, char * buf);
+char* format_octal(char* octal);
+void str_mode(__mode_t mode, char* buf);
 long int get_running_time();
 int log_start();
 void format_argv(int argc, char* argv[], char* str);
@@ -62,7 +62,7 @@ int log_start() {
         } 
 
         char* log_file_name = getenv(LOG_FILENAME);
-
+        
         if(log_file_name != NULL){
             FILE* log_file = fopen(log_file_name, "w");
             fclose(log_file);
@@ -103,11 +103,7 @@ void write_to_log(unsigned int event, char* info) {
 
         fputs(str, log_file);
         fclose(log_file);
-    } 
-    else {
-        //fprintf(stdout, "LOG_FILENAME env variable was not found.");
     }
-
 }
 
 /**
@@ -123,7 +119,7 @@ void sig_handler(int signo) {
         
         fprintf(stdout, "%i ; %s ; %i ; %i\n", getpid(), "FILENAME", nftot, nfmod);    
 
-        if(getpid() == FIRST_PROCESS_PID){      //The eldest controls the signals
+        if(getpid() == FIRST_PROCESS_PID){ //The eldest controls the signals
             sleep(0.25);
             int option;
             char msg1[15], msg2[15];
@@ -170,8 +166,6 @@ void sig_handler(int signo) {
         write_to_log(SIGNAL_RECV, sig_received);
     }
 }
-
-
 
 /**
  * Gets the time that the process runned until the moment this function is called
@@ -566,7 +560,7 @@ int main(int argc, char* argv[], char* envp[]){
 
     // verificar se há argumentos suficientes para correr o programa
     if(argc <= 2){
-        fprintf(stdout, "Invalid number of arguments\n");
+        fprintf(stderr, "Invalid number of arguments\n");
         strcpy(exit_code, "1");
     }
     
@@ -586,10 +580,14 @@ int main(int argc, char* argv[], char* envp[]){
             char *input = argv[index];
             char *in = (char *) malloc (18 * sizeof(char));
             char *file_name = argv[argc - 1];
-            get_input(input, in, file_name, index, argc, argv);
-
-            if(run_xmod(in, file_name, verbosity, recursive, argc, argv) != 0){
+            if (access(file_name, F_OK)) {
+                perror("access");
                 strcpy(exit_code, "1");
+            } else {
+                get_input(input, in, file_name, index, argc, argv);
+                if(run_xmod(in, file_name, verbosity, recursive, argc, argv) != 0){
+                    strcpy(exit_code, "1");
+                }
             }
             free(in);
         }
