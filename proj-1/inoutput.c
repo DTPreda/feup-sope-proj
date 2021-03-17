@@ -52,8 +52,7 @@ int parse_argv(int argc, char* argv[]) {
 int parse_perm_arg_octal(char* arg) {
     if (strlen(arg) != 4) return 1;
     if (arg[0] != '0') return 1;
-    for (int i = 1; i < 4; i++)
-        if (atoi(&arg[i]) > 7 || atoi(&arg[i]) < 0) return 1;
+    if (atoi(arg) < 0 || atoi(arg) > 777) return 1;
     return 0;
 }
 
@@ -113,46 +112,44 @@ int parse_perm_arg(char* arg) {
 /**
  * Converts octal input to format "u=--- g=--- o=---", where "-" can be 'r' 'w' or 'x'
  */
-char * format_octal(char *octal) {
-    char* result = (char *) malloc( 18*sizeof(char));
-    strcat(result, "u=");
+void format_octal(char *octal, char* in) {
+    strcpy(in, "u=");
     for (int i = 1; i < strlen(octal); i++) {
         switch (octal[i]) {
         case '7':
-            strcat(result, "rwx");
+            strcat(in, "rwx");
             break;
         case '6':
-            strcat(result, "rw");
+            strcat(in, "rw");
             break;
         case '5':
-            strcat(result, "rx");
+            strcat(in, "rx");
             break;
         case '4':
-            strcat(result, "r");
+            strcat(in, "r");
             break;
         case '3':
-            strcat(result, "wx");
+            strcat(in, "wx");
             break;
         case '2':
-            strcat(result, "w");
+            strcat(in, "w");
             break;
         case '1':
-            strcat(result, "x");
+            strcat(in, "x");
             break;
         case '0':
-            strcat(result, "");
+            strcat(in, "");
             break;
         default:
             break;
         }
 
         if (i == 1) {
-            strcat(result, " g=");
+            strcat(in, " g=");
         } else if (i == 2) {
-            strcat(result, " o=");
+            strcat(in, " o=");
         }
     }
-    return result;
 }
 
 int get_options(int* verbose, int* recursive, int* index, int argc, char* argv[]) {
@@ -186,7 +183,7 @@ int get_options(int* verbose, int* recursive, int* index, int argc, char* argv[]
 
 void get_input(char* input, char* in, char* file_name, int index, int argc, char* argv[]) {
     if (input[0] == '0') {  // get input
-        in = format_octal(input);
+        format_octal(input, in);
     } else {
         strcpy(in, "");
         for (int i = index; i < argc - 1; i++) {  // get inputs u=rwx g=rx o=wx

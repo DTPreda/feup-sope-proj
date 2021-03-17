@@ -51,8 +51,9 @@ __mode_t parse_perms(char* perms, char* filename, int verbosity) {
         return __UINT32_MAX__;
     }
     ret = stb.st_mode;
-
-    char* input = strtok(perms, " ");
+    char* copy = (char *) malloc(strlen(perms) * sizeof(char) + 1) ;
+    strcpy(copy, perms);
+    char* input = strtok(copy, " ");
     for ( ; input != NULL; ) {
         size_t len = strlen(input);
         char target = 'a';
@@ -113,7 +114,7 @@ __mode_t parse_perms(char* perms, char* filename, int verbosity) {
 
         input = strtok(NULL, " ");
     }
-
+    free(copy);
     return ret;
 }
 

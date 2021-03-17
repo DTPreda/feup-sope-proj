@@ -27,8 +27,6 @@ void concatenate_dir_file(char* dir, char* file_name, char* ret) {
 }
 
 int recursive_xmod(char* cmd, char* dir_name, int verbosity, int argc, char *argv[]) {
-    fprintf(stdout, "CURR: %s\n", curr_file);
-    sleep(2);
     char copy[100];
     char file_name[100];
     DIR* d;
@@ -87,7 +85,6 @@ int recursive_xmod(char* cmd, char* dir_name, int verbosity, int argc, char *arg
 
 int xmod(char* in, char* file_name, int verbosity) {
     __mode_t old_mode = 0;
-
     struct stat stb;
     if (stat(file_name, &stb) != 0) {  // get permissions
         perror("Stat");
@@ -120,7 +117,6 @@ int run_xmod(char* in, char* file_name, int verbosity, int recursive, int argc, 
         perror("stat");
         return 1;
     }
-
     __mode_t arg_info = st.st_mode;
     if (recursive) {
         if ((arg_info & __S_IFDIR) != 0) {
@@ -154,13 +150,11 @@ int main(int argc, char* argv[], char* envp[]) {
     } else {
         char* str = (char *) malloc(100*sizeof(char));
         format_argv(argc, argv, str);
-
         if (set_handlers()) {
             strcpy(exit_code, "1");
         } else {
             log_start();
             write_to_log(PROC_CREATE, str);
-
             int verbosity = 0, recursive = 0, index;
             if (get_options(&verbosity, &recursive, &index, argc, argv)) {
                 strcpy(exit_code, "1");
@@ -168,10 +162,8 @@ int main(int argc, char* argv[], char* envp[]) {
                 char *input = argv[index];
                 char *in = (char *) malloc (18 * sizeof(char));
                 char *file_name = argv[argc - 1];
-
                 get_input(input, in, file_name, index, argc, argv);
                 curr_file = file_name;
-
                 if (run_xmod(in, file_name, verbosity, recursive, argc, argv) != 0) {
                     strcpy(exit_code, "1");
                 }
