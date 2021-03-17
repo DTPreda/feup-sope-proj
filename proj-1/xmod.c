@@ -26,7 +26,7 @@ struct timespec start_time, end_time;
 long int time_start, time_end;
 unsigned int nftot = 0;
 unsigned int nfmod = 0;
-char curr_file[100];    //currently FILE/DIR passed to argv, needed to use in sig_handler
+char* curr_file;    //currently FILE/DIR passed to argv, needed to use in sig_handler
 
 
 int xmod(char* in, char* file_name, int verbosity);
@@ -590,6 +590,7 @@ int main(int argc, char* argv[], char* envp[]){
 
             } else {
                 get_input(input, in, file_name, index, argc, argv);
+                curr_file = file_name;
                 if(run_xmod(in, file_name, verbosity, recursive, argc, argv) != 0){
                     strcpy(exit_code, "1");
                 }
