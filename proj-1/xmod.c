@@ -296,7 +296,7 @@ void concatenate_dir_file(char* dir, char* file_name, char* ret){
 }
 
 int recursive_xmod(char* cmd, char* dir_name, int verbosity, int argc, char *argv[]){
-    sleep(2);
+    //sleep(2);
     char copy[100];
     char file_name[100];
     DIR* d;
@@ -344,6 +344,10 @@ int recursive_xmod(char* cmd, char* dir_name, int verbosity, int argc, char *arg
                 else {
                     wait(0);
                 }
+            }
+            else if (dir->d_type == DT_LNK){
+                concatenate_dir_file(dir_name, dir->d_name, file_name);
+                fprintf(stdout, "neither symbolic link '%s' nor referent has been changed\n", file_name);
             }
         }
         return 0;
