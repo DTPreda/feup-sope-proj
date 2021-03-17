@@ -5,3 +5,5 @@
 /xmodtest/**
 */xmod.o
 /xmod.o
+/symFolder/**
+/infer-out/**
