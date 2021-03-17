@@ -37,6 +37,7 @@ void str_mode(__mode_t mode, char* buf);
 long int get_running_time();
 int log_start();
 void format_argv(int argc, char* argv[], char* str);
+int parse_argv(int argc, char* argv[]);
 
 
 /**
@@ -541,6 +542,30 @@ int run_xmod(char* in, char* file_name, int verbosity, int recursive, int argc, 
     }
 }
 
+int parse_argv(int argc, char* argv[]) {
+    if (argc <= 2) {
+        return 1;
+    }
+    for (int i = 0; i < argc; i++) {
+        if ((argv[i][0] == "a" || argv[i][0] == "u" || argv[i][0] == "g" || argv[i][0] == "o") && argv[i][1] == "=") {
+            for(int j = 2; j < strlen(argv[i]); j++) {
+                if(argv[i][j] != "r" && argv[i][j] != "w" && argv[i][j] != "x") {
+                    return 1;
+                }
+            }
+            return 0;
+        }
+        if (argv[i][0] == "0" && strlen(argv[i]) == 4) {
+            for(int j = 0; j < strlen(argv[i]); j++) {
+                if(atoi(argv[i][j]) < 0 || atoi(argv[i][j]) > 7)
+                    return 1;
+            }
+            return 0;
+        }
+    }
+    return 1;
+}
+
 /**
  * Gets the input on argv into a string
  *@param str destination of the input in argv
@@ -559,6 +584,7 @@ int main(int argc, char* argv[], char* envp[]){
     strcpy(exit_code, "0");
 
     // verificar se há argumentos suficientes para correr o programa
+    // Outdated, devido às opções já não funciona como deve
     if(argc <= 2){
         fprintf(stderr, "Invalid number of arguments\n");
         strcpy(exit_code, "1");
