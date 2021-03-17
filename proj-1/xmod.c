@@ -7,9 +7,9 @@
 #include <string.h>
 #include <unistd.h>
 #include <ctype.h>
-#include "log.h"
 #include <time.h>
 #include <math.h>
+#include "./log.h"
 
 #define LOG_FILENAME "LOG_FILENAME"
 #define FIRST_PROCESS_PID getpgrp()
