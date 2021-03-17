@@ -26,6 +26,7 @@ struct timespec start_time, end_time;
 long int time_start, time_end;
 unsigned int nftot = 0;
 unsigned int nfmod = 0;
+char* curr_file;    //currently FILE/DIR passed to argv, needed to use in sig_handler
 
 
 int xmod(char* in, char* file_name, int verbosity);
@@ -118,30 +119,34 @@ void sig_handler(int signo) {
         sprintf(sig_received, "SIGINT");
         write_to_log(SIGNAL_RECV, sig_received);
         
-        fprintf(stdout, "%i ; %s ; %i ; %i\n", getpid(), "FILENAME", nftot, nfmod);    
+        fprintf(stdout, "%i ; %s ; %i ; %i\n", getpid(), curr_file, nftot, nfmod);    
 
         if(getpid() == FIRST_PROCESS_PID){ //The eldest controls the signals
             sleep(0.25);
             int option;
             char msg1[15], msg2[15];
             sprintf(msg1, "SIGUSR1 : %d", getpid());
-            sprintf(msg2, "SIGUSR2 : %d", getpid());
+            sprintf(msg2, "SIGCONT : %d", getpid());
 
             fprintf(stdout, "Would you wish to proceed? [Y/N]\n");
-            option = getchar();
+            while( (option = getchar()) == '\n') ;
             switch (option){
                 case 'Y':
                 case 'y':
                     fprintf(stdout, "Resuming process \n");
                     write_to_log(SIGNAL_SENT, msg2);
-                    killpg(getpgrp(), SIGUSR2);
+                    killpg(getpgrp(), SIGCONT);
                     break;
                 case 'N':
                 case 'n':
+                    write_to_log(SIGNAL_SENT, msg2);
+                    killpg(getpgrp(), SIGCONT);
                     write_to_log(SIGNAL_SENT, msg1);
                     killpg(getpgrp(), SIGUSR1);
                     break;
                 default:
+                    write_to_log(SIGNAL_SENT, msg2);
+                    killpg(getpgrp(), SIGCONT);
                     fprintf(stdout, "Unknown option, aborting program\n");
                     write_to_log(SIGNAL_SENT, msg1);
                     killpg(getpgrp(), SIGUSR1);
@@ -149,7 +154,14 @@ void sig_handler(int signo) {
             }
         } 
         else {
-            pause();
+            char msg[15];
+            sprintf(msg, "SIGSTOP : %d", getpid());
+            write_to_log(SIGNAL_SENT, msg);
+            kill(getpid(), SIGSTOP);
+            
+            char sig_received[15];
+            sprintf(sig_received, "SIGCONT");
+            write_to_log(SIGNAL_RECV, sig_received);
         }
     }
     else if (signo == SIGUSR1) {
@@ -161,11 +173,6 @@ void sig_handler(int signo) {
         write_to_log(PROC_EXIT, "1");
         exit(1);
     } 
-    else if (signo == SIGUSR2) {
-        char sig_received[15];
-        sprintf(sig_received, "SIGUSR2");
-        write_to_log(SIGNAL_RECV, sig_received);
-    }
 }
 
 /**
@@ -336,13 +343,18 @@ int recursive_xmod(char* cmd, char* dir_name, int verbosity, int argc, char *arg
 
                     argv[argc - 1] = file_name;
                     if (execv("xmod", argv) == -1) {
+                        argv[argc - 1] = dir_name;
                         perror("execve");
                         return 1;
                     }
-
-                }  else {
+                    argv[argc - 1] = dir_name;
+                }  
+                else {
                     wait(0);
                 }
+            } else if (dir->d_type == DT_LNK){
+                concatenate_dir_file(dir_name, dir->d_name, file_name);
+                print_changes(0, 0, 3 & (3 * (verbosity == 1)), file_name);
             }
         }
         return 0;
@@ -421,11 +433,6 @@ int set_handlers(){
         return 1;
     }
 
-    if (signal(SIGUSR2, sig_handler) == SIG_ERR) {
-        perror("signal");
-        return 1;
-    }
-
     return 0;
 }
 
@@ -472,6 +479,11 @@ void get_input(char* input, char* in, char* file_name, int index, int argc, char
 }
 
 void print_changes(__mode_t new_mode, __mode_t old_mode, int verbosity, char* file_name){
+    if(verbosity == 3){
+        printf("neither symbolic link '%s' nor referent has been changed", file_name);
+        return;
+    }
+
     char old_mode_str[15]; 
     char new_mode_str[15];
     str_mode(old_mode, old_mode_str);
@@ -519,7 +531,7 @@ int run_xmod(char* in, char* file_name, int verbosity, int recursive, int argc, 
     }
 
     __mode_t arg_info = st.st_mode;
-
+    strcpy(curr_file, argv[argc - 1]);
     if (recursive) {
         if ((arg_info & __S_IFDIR) != 0) {
             if(recursive_xmod(in, file_name, verbosity, argc, argv)){
@@ -528,7 +540,6 @@ int run_xmod(char* in, char* file_name, int verbosity, int recursive, int argc, 
             return 0;
         } 
         else {
-            //fprintf(stderr, "Invalid option, not a directory, %d.\n", recursive);
             return 1;
         }
     } 
@@ -609,8 +620,10 @@ int main(int argc, char* argv[], char* envp[]){
             if (access(file_name, F_OK)) {
                 perror("access");
                 strcpy(exit_code, "1");
+
             } else {
                 get_input(input, in, file_name, index, argc, argv);
+                curr_file = file_name;
                 if(run_xmod(in, file_name, verbosity, recursive, argc, argv) != 0){
                     strcpy(exit_code, "1");
                 }

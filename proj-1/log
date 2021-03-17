@@ -1,13 +1,30 @@
-0 ; 5807 ; PROC_CREAT ; ./xmod -vR g=rx test
-2003 ; 5808 ; PROC_CREAT ; ./xmod -vR g=rx test/test4
-4006 ; 5809 ; PROC_CREAT ; ./xmod -vR g=rx test/test4/test7
-4289 ; 5809 ; SIGNAL_RECV ; SIGINT
-4289 ; 5807 ; SIGNAL_RECV ; SIGINT
-4289 ; 5808 ; SIGNAL_RECV ; SIGINT
-4690 ; 5807 ; SIGNAL_SENT ; SIGUSR1 : 5807
-4690 ; 5807 ; SIGNAL_RECV ; SIGUSR1
-4690 ; 5809 ; SIGNAL_RECV ; SIGUSR1
-4690 ; 5808 ; SIGNAL_RECV ; SIGUSR1
-4690 ; 5809 ; PROC_EXIT ; 1
-4690 ; 5808 ; PROC_EXIT ; 1
-4691 ; 5807 ; PROC_EXIT ; 1
+<<<<<<< HEAD
+1 ; 4528 ; PROC_CREAT ; ./xmod -vR a=rwx xmodtest
+1 ; 4529 ; PROC_CREAT ; ./xmod -vR a=rwx xmodtest/xmodtest2
+2 ; 4530 ; PROC_CREAT ; ./xmod -vR a=rwx xmodtest/xmodtest2/oie
+2 ; 4530 ; PROC_EXIT ; 0
+3 ; 4531 ; PROC_CREAT ; ./xmod -vR a=rwx xmodtest/xmodtest2/anotherSub
+3 ; 4531 ; PROC_EXIT ; 0
+3 ; 4532 ; PROC_CREAT ; ./xmod -vR a=rwx xmodtest/xmodtest2/subfolder
+4 ; 4532 ; PROC_EXIT ; 0
+4 ; 4529 ; PROC_EXIT ; 0
+4 ; 4528 ; PROC_EXIT ; 0
+=======
+4 ; 3589 ; PROC_CREAT ; ./xmod -vR g=rx test
+2006 ; 3590 ; PROC_CREAT ; ./xmod -vR g=rx test/test4
+4008 ; 3591 ; PROC_CREAT ; ./xmod -vR g=rx test/test4/test7
+4353 ; 3591 ; SIGNAL_RECV ; SIGINT
+4353 ; 3590 ; SIGNAL_RECV ; SIGINT
+4353 ; 3589 ; SIGNAL_RECV ; SIGINT
+4353 ; 3590 ; SIGNAL_SENT ; SIGSTOP : 3590
+4353 ; 3591 ; SIGNAL_SENT ; SIGSTOP : 3591
+5333 ; 3589 ; SIGNAL_SENT ; SIGCONT : 3589
+5334 ; 3589 ; SIGNAL_SENT ; SIGUSR1 : 3589
+5334 ; 3591 ; SIGNAL_RECV ; SIGCONT
+5334 ; 3589 ; SIGNAL_RECV ; SIGUSR1
+5334 ; 3590 ; SIGNAL_RECV ; SIGUSR1
+5334 ; 3591 ; SIGNAL_RECV ; SIGUSR1
+5334 ; 3590 ; PROC_EXIT ; 1
+5334 ; 3591 ; PROC_EXIT ; 1
+5334 ; 3589 ; PROC_EXIT ; 1
+>>>>>>> 570a89fd202d446ff1e65b48cacbacb4808ade1f
