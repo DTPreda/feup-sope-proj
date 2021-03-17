@@ -342,14 +342,18 @@ int recursive_xmod(char* cmd, char* dir_name, int verbosity, int argc, char *arg
 
                     argv[argc - 1] = file_name;
                     if (execv("xmod", argv) == -1) {
+                        argv[argc - 1] = dir_name;
                         perror("execve");
                         return 1;
                     }
-
+                    argv[argc - 1] = dir_name;
                 }  
                 else {
                     wait(0);
                 }
+            } else if (dir->d_type == DT_LNK && verbosity == 1){
+                concatenate_dir_file(dir_name, dir->d_name, file_name);
+                print_changes(0, 0, 3, file_name);
             }
         }
         return 0;
@@ -427,7 +431,7 @@ int set_handlers(){
         perror("signal");
         return 1;
     }
-    
+
     return 0;
 }
 
@@ -474,6 +478,11 @@ void get_input(char* input, char* in, char* file_name, int index, int argc, char
 }
 
 void print_changes(__mode_t new_mode, __mode_t old_mode, int verbosity, char* file_name){
+    if(verbosity == 3){
+        printf("neither symbolic link '%s' nor referent has been changed", file_name);
+        return;
+    }
+
     char old_mode_str[15]; 
     char new_mode_str[15];
     str_mode(old_mode, old_mode_str);
@@ -522,8 +531,6 @@ int run_xmod(char* in, char* file_name, int verbosity, int recursive, int argc, 
 
     __mode_t arg_info = st.st_mode;
     strcpy(curr_file, argv[argc - 1]);
-    //fprintf(stdout, "Current_file: %s\n", curr_file);
-
     if (recursive) {
         if ((arg_info & __S_IFDIR) != 0) {
             if(recursive_xmod(in, file_name, verbosity, argc, argv)){
@@ -532,7 +539,6 @@ int run_xmod(char* in, char* file_name, int verbosity, int recursive, int argc, 
             return 0;
         } 
         else {
-            //fprintf(stderr, "Invalid option, not a directory, %d.\n", recursive);
             return 1;
         }
     } 
