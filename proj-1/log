@@ -1,3 +1,15 @@
+<<<<<<< HEAD
+1 ; 4528 ; PROC_CREAT ; ./xmod -vR a=rwx xmodtest
+1 ; 4529 ; PROC_CREAT ; ./xmod -vR a=rwx xmodtest/xmodtest2
+2 ; 4530 ; PROC_CREAT ; ./xmod -vR a=rwx xmodtest/xmodtest2/oie
+2 ; 4530 ; PROC_EXIT ; 0
+3 ; 4531 ; PROC_CREAT ; ./xmod -vR a=rwx xmodtest/xmodtest2/anotherSub
+3 ; 4531 ; PROC_EXIT ; 0
+3 ; 4532 ; PROC_CREAT ; ./xmod -vR a=rwx xmodtest/xmodtest2/subfolder
+4 ; 4532 ; PROC_EXIT ; 0
+4 ; 4529 ; PROC_EXIT ; 0
+4 ; 4528 ; PROC_EXIT ; 0
+=======
 4 ; 3589 ; PROC_CREAT ; ./xmod -vR g=rx test
 2006 ; 3590 ; PROC_CREAT ; ./xmod -vR g=rx test/test4
 4008 ; 3591 ; PROC_CREAT ; ./xmod -vR g=rx test/test4/test7
@@ -15,3 +27,4 @@
 5334 ; 3590 ; PROC_EXIT ; 1
 5334 ; 3591 ; PROC_EXIT ; 1
 5334 ; 3589 ; PROC_EXIT ; 1
+>>>>>>> 570a89fd202d446ff1e65b48cacbacb4808ade1f
