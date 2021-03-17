@@ -131,7 +131,7 @@ void sig_handler(int signo) {
             sprintf(msg2, "SIGUSR2 : %d", getpid());
 
             fprintf(stdout, "Would you wish to proceed? [Y/N]\n");
-            option = getchar();
+            while( (option = getchar()) == '\n') ;
             switch (option){
                 case 'Y':
                 case 'y':
