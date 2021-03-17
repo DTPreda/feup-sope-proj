@@ -1,10 +1,1 @@
-0 ; 11245 ; PROC_CREATE ; ./xmod -vR a=rwx xmodtest
-2006 ; 11246 ; PROC_CREATE ; ./xmod -vR a=rwx xmodtest/xmodtest2
-4010 ; 11247 ; PROC_CREATE ; ./xmod -vR a=rwx xmodtest/xmodtest2/oie
-6012 ; 11247 ; PROC_EXIT ; 0
-6015 ; 11248 ; PROC_CREATE ; ./xmod -vR a=rwx xmodtest/xmodtest2/anotherSub
-8019 ; 11248 ; PROC_EXIT ; 0
-8020 ; 11249 ; PROC_CREATE ; ./xmod -vR a=rwx xmodtest/xmodtest2/subfolder
-10021 ; 11249 ; PROC_EXIT ; 0
-10022 ; 11246 ; PROC_EXIT ; 0
-10022 ; 11245 ; PROC_EXIT ; 0
+0 ; 51133 ; PROC_CREATE ; ./xmod -vR 0555 xmodtest
