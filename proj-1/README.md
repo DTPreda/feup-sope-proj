@@ -14,7 +14,11 @@ OPTIONS - One of 3 is possible, -v, -c and -R. -v is equivalent to the verbose m
 
 MODE/OCTAL-MODE - New mode of the file/directory, written according to the project specification. For the normal mode, it is possible for the user to change the 3 permissions separately (user, group and others), or, if easier, the user can opt for OCTAL-MODE, where the first number must be a zero to be recognized, followed by the octal representation of the mode bits the user wishes to set. For example, if we want everyone to be able to read (r), write (w) and execute (x) the file, one could simpy do ```./xmod 0777 file/dir```.
 
-FILE/DIR - Name of the file or directory we wish to change. Xmod handles files in the same way that chmod would, and that includes symbolic links, where instead of the actual file being changed, only the file it points to is affected. When a directory is specified with the recursive option enabled, every file witihn the folder will be changes (including files within other folders), but when no recursive flag is given, only the directory will be changed.
+FILE/DIR - Name of the file or directory we wish to change. Xmod handles files in the same way that chmod would, and that includes symbolic links, where instead of the actual file being changed, only the file it points to is affected. When a directory is specified with the recursive option enabled, every file within the folder will be changed (including files within other folders and excluding the files pointed by the symbolic links), in the same way that chmod works, but when no recursive flag is given, only the directory will be changed.
+
+In order to store the results of processes created/exited and signals sent/handled, the user must create an environment variable whose value is the file where information will be stored.
+For that the user can set the environment variable writing the follwing on the command line: 
+```export LOG_FILENAME=<name_of_file_to_store>```
 
 ## Implementation Details
 

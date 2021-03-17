@@ -156,7 +156,7 @@ void sig_handler(int signo) {
             kill(getpid(), SIGSTOP);
 
             char sig_received[15];
-            spnrintf(sig_received, sizeof(sig_received), "SIGCONT");
+            snprintf(sig_received, sizeof(sig_received), "SIGCONT");
             write_to_log(SIGNAL_RECV, sig_received);
         }
     } else if (signo == SIGUSR1) {
@@ -306,6 +306,7 @@ int recursive_xmod(char* cmd, char* dir_name, int verbosity, int argc, char *arg
     DIR* d;
     struct dirent *dir;
     d = opendir(dir_name);
+    
     if (d) {
         if (xmod(cmd, dir_name, verbosity) != 0) {
             perror("chmod");
@@ -351,7 +352,6 @@ int recursive_xmod(char* cmd, char* dir_name, int verbosity, int argc, char *arg
         }
         return 0;
     }
-
     return 1;
 }
 
@@ -531,6 +531,7 @@ int run_xmod(char* in, char* file_name, int verbosity, int recursive, int argc, 
             }
             return 0;
         } else {
+            fprintf(stderr, "This file is not a directory\n");
             return 1;
         }
     } else {
