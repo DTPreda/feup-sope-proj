@@ -26,7 +26,7 @@ struct timespec start_time, end_time;
 long int time_start, time_end;
 unsigned int nftot = 0;
 unsigned int nfmod = 0;
-char* curr_file;    //currently FILE/DIR passed to argv, needed to use in sig_handler
+char* curr_file;  // currently FILE/DIR passed to argv
 
 
 int xmod(char* in, char* file_name, int verbosity);
@@ -50,27 +50,25 @@ int log_start() {
     
     if (getpid() != FIRST_PROCESS_PID) {  // if the process is not the first one to be created => START_TIME will already have been created
         time_start = atol(getenv(START_TIME));
-    } 
-    else {
+    } else {
         clock_gettime(CLOCK_REALTIME, &start_time);
-        time_start = start_time.tv_sec * 1000 + start_time.tv_nsec/(pow(10, 6));    //time in ms
+        time_start = start_time.tv_sec * 1000 + start_time.tv_nsec/(pow(10, 6));    // time in ms
 
         char st_time[50];
         snprintf(st_time, sizeof(st_time) , "%ld", time_start);
 
-        int stat = setenv(START_TIME, st_time, 0);           //store the starting time on environment variable
+        int stat = setenv(START_TIME, st_time, 0);           // store the starting time on environment variable
         if (stat == -1) {
             fprintf(stderr, "Error setting environment variable\n");
             return 1;
-        } 
+        }
 
         char* log_file_name = getenv(LOG_FILENAME);
-        
-        if(log_file_name != NULL){
+
+        if (log_file_name != NULL) {
             FILE* log_file = fopen(log_file_name, "w");
             fclose(log_file);
         }
-
     }
 
     return 0;
@@ -84,22 +82,21 @@ void write_to_log(unsigned int event, char* info) {
         log_file = fopen(log_file_name, "a");
 
         char str[100];
-        switch (event)
-        {
+        switch (event) {
         case PROC_CREATE:
-            sprintf(str, "%ld ; %d ; PROC_CREAT ;%s\n", get_running_time() - time_start, getpid(), info);
+            snprintf(str, sizeof(str), "%ld ; %d ; PROC_CREATE ;%s\n", get_running_time() - time_start, getpid(), info);
             break;
         case PROC_EXIT:
-            sprintf(str, "%ld ; %d ; PROC_EXIT ; %s\n", get_running_time() - time_start, getpid(), info);
+            snprintf(str, sizeof(str), "%ld ; %d ; PROC_EXIT ;%s\n", get_running_time() - time_start, getpid(), info);
             break;
         case SIGNAL_RECV:
-            sprintf(str, "%ld ; %d ; SIGNAL_RECV ; %s\n", get_running_time() - time_start, getpid(), info);
+            snprintf(str, sizeof(str), "%ld ; %d ; SIGNAL_RECV ;%s\n", get_running_time() - time_start, getpid(), info);
             break;
         case SIGNAL_SENT:
-            sprintf(str, "%ld ; %d ; SIGNAL_SENT ; %s\n", get_running_time() - time_start, getpid(), info);
+            snprintf(str, sizeof(str), "%ld ; %d ; SIGNAL_SENT ; %s\n", get_running_time() - time_start, getpid(), info);
             break;
         case FILE_MODF:
-            sprintf(str, "%ld ; %d ; FILE_MODF ; %s\n", get_running_time() - time_start, getpid(), info);
+            snprintf(str, sizeof(str), "%ld ; %d ; FILE_MODF ; %s\n", get_running_time() - time_start, getpid(), info);
         default:
             break;
         }
@@ -114,24 +111,23 @@ void write_to_log(unsigned int event, char* info) {
  * about the signal received
  */ 
 void sig_handler(int signo) {
-
     if (signo == SIGINT) {
         char sig_received[15];
-        sprintf(sig_received, "SIGINT");
+        snprintf(sig_received, sizeof(sig_received), "SIGINT");
         write_to_log(SIGNAL_RECV, sig_received);
-        
-        fprintf(stdout, "%i ; %s ; %i ; %i\n", getpid(), curr_file, nftot, nfmod);    
 
-        if(getpid() == FIRST_PROCESS_PID){ //The eldest controls the signals
+        fprintf(stdout, "%i ; %s ; %i ; %i\n", getpid(), curr_file, nftot, nfmod);
+
+        if (getpid() == FIRST_PROCESS_PID) {   // The eldest controls the signals
             sleep(0.25);
             int option;
             char msg1[15], msg2[15];
-            sprintf(msg1, "SIGUSR1 : %d", getpid());
-            sprintf(msg2, "SIGCONT : %d", getpid());
+            snprintf(msg1, sizeof(msg1), "SIGUSR1 : %d", getpid());
+            snprintf(msg2, sizeof(msg2), "SIGCONT : %d", getpid());
 
             fprintf(stdout, "Would you wish to proceed? [Y/N]\n");
-            while( (option = getchar()) == '\n') ;
-            switch (option){
+            while ( (option = getchar()) == '\n') {}
+            switch (option) {
                 case 'Y':
                 case 'y':
                     fprintf(stdout, "Resuming process \n");
@@ -153,27 +149,25 @@ void sig_handler(int signo) {
                     killpg(getpgrp(), SIGUSR1);
                     break;
             }
-        } 
-        else {
+        } else {
             char msg[15];
-            sprintf(msg, "SIGSTOP : %d", getpid());
+            snprintf(msg, sizeof(msg), "SIGSTOP : %d", getpid());
             write_to_log(SIGNAL_SENT, msg);
             kill(getpid(), SIGSTOP);
-            
+
             char sig_received[15];
-            sprintf(sig_received, "SIGCONT");
+            spnrintf(sig_received, sizeof(sig_received), "SIGCONT");
             write_to_log(SIGNAL_RECV, sig_received);
         }
-    }
-    else if (signo == SIGUSR1) {
+    } else if (signo == SIGUSR1) {
         char sig_received[15];
-        sprintf(sig_received, "SIGUSR1");
+        snprintf(sig_received, sizeof(sig_received), "SIGUSR1");
         write_to_log(SIGNAL_RECV, sig_received);
 
-        if(getpid() == FIRST_PROCESS_PID) wait(0);
+        if (getpid() == FIRST_PROCESS_PID) wait(0);
         write_to_log(PROC_EXIT, "1");
         exit(1);
-    } 
+    }
 }
 
 /**
@@ -182,37 +176,37 @@ void sig_handler(int signo) {
 */
 long int get_running_time() {
     clock_gettime(CLOCK_REALTIME, &end_time);
-    long int delta_ms = end_time.tv_sec * 1000 + end_time.tv_nsec/(pow(10, 6));    //time in ms
+    long int delta_ms = end_time.tv_sec * 1000 + end_time.tv_nsec/(pow(10, 6));   // time in ms
     return delta_ms;
 }
 
-__mode_t parse_perms(char* perms, char* filename, int verbosity){
+__mode_t parse_perms(char* perms, char* filename, int verbosity) {
     __mode_t ret = 0;
     struct stat stb;
-    if(stat(filename, &stb) != 0){	//get permissions
+    if (stat(filename, &stb) != 0) {  // get permissions
         perror("Stat");
         return __UINT32_MAX__;
     }
     ret = stb.st_mode;
 
     char* input = strtok(perms, " ");
-    for( ; input != NULL; ){
+    for ( ; input != NULL; ) {
         size_t len = strlen(input);
         char target = 'a';
         char mode;
         unsigned int read = 0, write = 0, execute = 0;
-        for(int i = len - 1; input[i] != '+' && input[i] != '-' && input[i] != '=' && i > 0; i--){
-            if(input[i] == 'r') read = 1;
-            if(input[i] == 'w') write = 1;
-            if(input[i] == 'x') execute = 1;
+        for (int i = len - 1; input[i] != '+' && input[i] != '-' && input[i] != '=' && i > 0; i--) {
+            if (input[i] == 'r') read = 1;
+            if (input[i] == 'w') write = 1;
+            if (input[i] == 'x') execute = 1;
         }
 
-        if(!read && !write && !execute){
+        if (!read && !write && !execute) {
             fprintf(stderr, "Invalid input\n");
             return __UINT32_MAX__;
         }
 
-        switch (input[0]){
+        switch (input[0]) {
             case 'u':
                 target = 'u';
                 mode = input[1];
@@ -234,23 +228,22 @@ __mode_t parse_perms(char* perms, char* filename, int verbosity){
         }
 
         __mode_t temp = 0, sec_temp = 0;
-        if(mode == '+'){
+        if (mode == '+') {
             temp = get_perms(read, write, execute, mode, target, filename);
-            if(temp == __UINT32_MAX__) return __UINT32_MAX__;
+            if (temp == __UINT32_MAX__) return __UINT32_MAX__;
             ret |= temp;
-        } else if(mode == '='){
-
+        } else if (mode == '=') {
             temp = get_perms(1, 1, 1, '+', target, filename);
-            if(temp == __UINT32_MAX__) return __UINT32_MAX__;
-            
+            if (temp == __UINT32_MAX__) return __UINT32_MAX__;
+
             sec_temp = get_perms(read, write, execute, '+', target, filename);
-            if(sec_temp == __UINT32_MAX__) return __UINT32_MAX__;
+            if (sec_temp == __UINT32_MAX__) return __UINT32_MAX__;
 
             ret &= ~(temp);
             ret |= sec_temp;
         } else {
             temp = get_perms(read, write, execute, mode, target, filename);
-            if(temp == __UINT32_MAX__) return __UINT32_MAX__;
+            if (temp == __UINT32_MAX__) return __UINT32_MAX__;
 
             ret &= temp;
         }
@@ -261,19 +254,21 @@ __mode_t parse_perms(char* perms, char* filename, int verbosity){
     return ret;
 }
 
-__mode_t get_perms(unsigned int r, unsigned int w, unsigned int x, char op, char target, char* filename){
+__mode_t get_perms(unsigned int r, unsigned int w, unsigned int x, char op, char target, char* filename) {
     __mode_t ret = 0;
 
     unsigned int modes[3] = {r, w, x};
     unsigned int targets[3] = {0, 0, 0};
-    if(target == 'a'){
-        targets[0] = 1; targets[1] = 1; targets[2] = 1;
+    if (target == 'a') {
+        targets[0] = 1;
+        targets[1] = 1;
+        targets[2] = 1;
     } else {
-        if(target == 'u') targets[2] = 1;
-        if(target == 'g') targets[1] = 1;
-        if(target == 'o') targets[0] = 1;
+        if (target == 'u') targets[2] = 1;
+        if (target == 'g') targets[1] = 1;
+        if (target == 'o') targets[0] = 1;
     }
-    if(op == '+'){
+    if (op == '+') {
         //ret = permissões do ficheiro;
         for(int i = 0; i < 3; i++){
             for(int j = 0; j < 3; j++){
