@@ -266,30 +266,32 @@ __mode_t get_perms(unsigned int r, unsigned int w, unsigned int x, char op, char
 
     unsigned int modes[3] = {r, w, x};
     unsigned int targets[3] = {0, 0, 0};
-    if(target == 'a'){
-        targets[0] = 1; targets[1] = 1; targets[2] = 1;
+    if (target == 'a') {
+        targets[0] = 1;
+        targets[1] = 1;
+        targets[2] = 1;
     } else {
-        if(target == 'u') targets[2] = 1;
-        if(target == 'g') targets[1] = 1;
-        if(target == 'o') targets[0] = 1;
+        if (target == 'u') targets[2] = 1;
+        if (target == 'g') targets[1] = 1;
+        if (target == 'o') targets[0] = 1;
     }
-    if(op == '+'){
-        //ret = permissões do ficheiro;
-        for(int i = 0; i < 3; i++){
-            for(int j = 0; j < 3; j++){
+    if (op == '+') {
+        // ret = permissões do ficheiro;
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
                 ret |= modes[i]*targets[j] << ((2 - i) + 3*j);
             }
         }
-    } else if (op == '-'){
-        //ret = permissões do ficheiro
+    } else if (op == '-') {
+        // ret = permissões do ficheiro
         struct stat stb;
-        if(stat(filename, &stb) != 0){	//get permissions
+        if (stat(filename, &stb) != 0) {  // get permissions
             perror("Stat");
             return __UINT32_MAX__;
         }
         ret = stb.st_mode;
-        for(int i = 0; i < 3; i++){
-            for(int j = 0; j < 3; j++){
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
                 ret &= ~(modes[i]*targets[j] << (((2 - i) + 3*j)));
             }
         }
@@ -297,48 +299,46 @@ __mode_t get_perms(unsigned int r, unsigned int w, unsigned int x, char op, char
     return ret;
 }
 
-void concatenate_dir_file(char* dir, char* file_name, char* ret){
+void concatenate_dir_file(char* dir, char* file_name, char* ret) {
     strcpy(ret, "");
-    strcat(ret, dir); strcat(ret, "/"); // filename = dir_name/
+    strcat(ret, dir);
+    strcat(ret, "/");  // filename = dir_name/
     strcat(ret, file_name);
 }
 
-int recursive_xmod(char* cmd, char* dir_name, int verbosity, int argc, char *argv[]){
+int recursive_xmod(char* cmd, char* dir_name, int verbosity, int argc, char *argv[]) {
     //sleep(2);
     char copy[100];
     char file_name[100];
     DIR* d;
     struct dirent *dir;
     d = opendir(dir_name);
-    if(d) {
-
-        if(xmod(cmd, dir_name, verbosity) != 0){
+    if (d) {
+        if (xmod(cmd, dir_name, verbosity) != 0) {
             perror("chmod");
             return 1;
         }
 
-        nftot += 1; // found dir called by argument
+        nftot += 1;  // found dir called by argument
 
-        while((dir = readdir(d)) != NULL){
-            
+        while ((dir = readdir(d)) != NULL) {
             strcpy(copy, cmd);
-            if(dir->d_type == DT_REG) { //if it is a regular file
-                nftot += 1; // found a file inside the directory
-                
+            if (dir->d_type == DT_REG) {  // if it is a regular file
+                nftot += 1;  // found a file inside the directory
                 concatenate_dir_file(dir_name, dir->d_name, file_name);
 
-                if(xmod(cmd, file_name, verbosity) != 0){
+                if (xmod(cmd, file_name, verbosity) != 0) {
                     perror("chmod");
                     return 1;
                 }
 
-            } else if (dir->d_type == DT_DIR && strcmp(dir->d_name, ".") != 0 && strcmp(dir->d_name, "..") != 0){
+            } else if (dir->d_type == DT_DIR && strcmp(dir->d_name, ".") != 0 && strcmp(dir->d_name, "..") != 0) {
                 int pid;
-                if((pid = fork()) < 0){
+                if ((pid = fork()) < 0) {
                     perror("fork");
                     return 1;
                 }
-                if(pid == 0){
+                if (pid == 0) {
 
                     concatenate_dir_file(dir_name, dir->d_name, file_name);
 
@@ -349,11 +349,10 @@ int recursive_xmod(char* cmd, char* dir_name, int verbosity, int argc, char *arg
                         return 1;
                     }
                     argv[argc - 1] = dir_name;
-                }  
-                else {
+                } else {
                     wait(0);
                 }
-            } else if (dir->d_type == DT_LNK){
+            } else if (dir->d_type == DT_LNK) {
                 concatenate_dir_file(dir_name, dir->d_name, file_name);
                 print_changes(0, 0, 3 & (3 * (verbosity == 1)), file_name);
             }
@@ -368,11 +367,11 @@ int recursive_xmod(char* cmd, char* dir_name, int verbosity, int argc, char *arg
 /**
  * Converts octal input to format "u=--- g=--- o=---", where "-" can be 'r' 'w' or 'x'
  */
-char * format_octal(char *octal){
+char * format_octal(char *octal) {
     char* result = (char *) malloc( 18*sizeof(char));
     strcat(result, "u=");
-    for (int i = 1; i < strlen(octal); i++){
-        switch (octal[i]){
+    for (int i = 1; i < strlen(octal); i++) {
+        switch (octal[i]) {
         case '7':
             strcat(result, "rwx");
             break;
@@ -401,9 +400,9 @@ char * format_octal(char *octal){
             break;
         }
 
-        if (i == 1){
+        if (i == 1) {
             strcat(result, " g=");
-        } else if (i == 2){
+        } else if (i == 2) {
             strcat(result, " o=");
         }
     }
@@ -423,7 +422,7 @@ void str_mode(__mode_t mode, char * buf) {
 
 
 
-int set_handlers(){
+int set_handlers() {
     if (signal(SIGINT, sig_handler) == SIG_ERR) {
         perror("signal");
         return 1;
@@ -438,10 +437,9 @@ int set_handlers(){
 }
 
 
-int get_options(int* verbose, int* recursive, int* index, int argc, char* argv[]){
+int get_options(int* verbose, int* recursive, int* index, int argc, char* argv[]) {
     int option;
-    while ((option = getopt(argc, argv, "vcR")) != -1)
-    {
+    while ((option = getopt(argc, argv, "vcR")) != -1) {
         switch (option) {
             case 'v':
                 *verbose = 1;
@@ -467,25 +465,25 @@ int get_options(int* verbose, int* recursive, int* index, int argc, char* argv[]
     return 0;
 }
 
-void get_input(char* input, char* in, char* file_name, int index, int argc, char* argv[]){
-    if (input[0] == '0'){  //get input 
+void get_input(char* input, char* in, char* file_name, int index, int argc, char* argv[]) {
+    if (input[0] == '0') {  // get input
         in = format_octal(input);
     } else {
         strcpy(in, "");
-        for (int i = index; i < argc - 1; i++){ //get all inputs u=rwx g=rx o=wx
+        for (int i = index; i < argc - 1; i++) {  // get inputs u=rwx g=rx o=wx
             strcat(in, argv[i]);
             strcat(in, " ");
         }
     }
 }
 
-void print_changes(__mode_t new_mode, __mode_t old_mode, int verbosity, char* file_name){
-    if(verbosity == 3){
+void print_changes(__mode_t new_mode, __mode_t old_mode, int verbosity, char* file_name) {
+    if (verbosity == 3) {
         printf("neither symbolic link '%s' nor referent has been changed\n", file_name);
         return;
     }
 
-    char old_mode_str[15]; 
+    char old_mode_str[15];
     char new_mode_str[15];
     str_mode(old_mode, old_mode_str);
     str_mode(new_mode, new_mode_str);
@@ -496,20 +494,21 @@ void print_changes(__mode_t new_mode, __mode_t old_mode, int verbosity, char* fi
         printf("mode of '%s' changed from 0%o (%s) to 0%o (%s)\n", file_name, old_mode % 512, old_mode_str, new_mode % 512, new_mode_str);
 }
 
-int xmod(char* in, char* file_name, int verbosity){
+int xmod(char* in, char* file_name, int verbosity) {
     __mode_t old_mode = 0;
-    
+
     struct stat stb;
-    if(stat(file_name, &stb) != 0){	//get permissions
+    if (stat(file_name, &stb) != 0) {  // get permissions
         perror("Stat");
         return 1;
     }
     old_mode = stb.st_mode;
-    
+
     __mode_t mode = 0;
-    if((mode = parse_perms(in, file_name, verbosity)) == __UINT32_MAX__) return 1;
-    if(mode != old_mode){
-        if(chmod(file_name, mode) != 0){
+    if ((mode = parse_perms(in, file_name, verbosity)) == __UINT32_MAX__)
+         return 1;
+    if (mode != old_mode) {
+        if (chmod(file_name, mode) != 0) {
             perror("chmod");
             return 1;
         }
@@ -517,16 +516,16 @@ int xmod(char* in, char* file_name, int verbosity){
     }
 
 
-    if(verbosity)
+    if (verbosity)
         print_changes(mode, old_mode, verbosity, file_name);
 
     return 0;
 }
 
 
-int run_xmod(char* in, char* file_name, int verbosity, int recursive, int argc, char* argv[]){
+int run_xmod(char* in, char* file_name, int verbosity, int recursive, int argc, char* argv[]) {
     struct stat st;
-    if(stat(file_name, &st) != 0) {
+    if (stat(file_name, &st) != 0) {
         perror("stat");
         return 1;
     }
@@ -535,18 +534,16 @@ int run_xmod(char* in, char* file_name, int verbosity, int recursive, int argc, 
     strcpy(curr_file, argv[argc - 1]);
     if (recursive) {
         if ((arg_info & __S_IFDIR) != 0) {
-            if(recursive_xmod(in, file_name, verbosity, argc, argv)){
+            if (recursive_xmod(in, file_name, verbosity, argc, argv)) {
                 return 1;
             }
             return 0;
-        } 
-        else {
+        } else {
             return 1;
         }
-    } 
-    else {
+    } else {
         nftot += 1;
-        if(xmod(in, file_name, verbosity) != 0){
+        if (xmod(in, file_name, verbosity) != 0) {
             perror("chmod");
             return 1;
         }
@@ -554,62 +551,63 @@ int run_xmod(char* in, char* file_name, int verbosity, int recursive, int argc, 
     }
 }
 
-int parse_perm_arg(char* arg){
-    if(strlen(arg) < 3) return 1;
+int parse_perm_arg(char* arg) {
+    if (strlen(arg) < 3) return 1;
 
     enum state_machine {TARGET, OPERATOR, FIRST, SECOND, THIRD, DONE};
     enum state_machine sm = TARGET;
-    for(int i = 0; i < strlen(arg); i++){
-        if(sm == TARGET){
-            if(arg[i] == 'a' || arg[i] == 'g' || arg[i] == 'u') {
+    for (int i = 0; i < strlen(arg); i++) {
+        if (sm == TARGET) {
+            if (arg[i] == 'a' || arg[i] == 'g' || arg[i] == 'u') {
                 sm = OPERATOR;
                 continue;
             }
             return 1;
-        } else if (sm == OPERATOR){
-            if(arg[i] == '+' || arg[i] == '-' || arg[i] == '='){
+        } else if (sm == OPERATOR) {
+            if (arg[i] == '+' || arg[i] == '-' || arg[i] == '=') {
                 sm = FIRST;
                 continue;
             }
             return 1;
-        } else if(sm == FIRST){
-            if(arg[i] == 'r'){
+        } else if (sm == FIRST) {
+            if (arg[i] == 'r') {
                 sm = SECOND;
                 continue;
-            } else if (arg[i] == 'w'){
+            } else if (arg[i] == 'w') {
                 sm = THIRD;
                 continue;
-            } else if (arg[i] == 'x'){
+            } else if (arg[i] == 'x') {
                 sm = DONE;
                 continue;
             }
             return 1;
-        } else if (sm == SECOND){
-            if(arg[i] == 'w'){
+        } else if (sm == SECOND) {
+            if (arg[i] == 'w') {
                 sm = THIRD;
                 continue;
-            } else if(arg[i] == 'x'){
+            } else if (arg[i] == 'x') {
                 sm = DONE;
                 continue;
             }
             return 1;
-        } else if (sm == THIRD){
-            if(arg[i] == 'x'){
+        } else if (sm == THIRD) {
+            if (arg[i] == 'x') {
                 sm = DONE;
                 continue;
             }
             return 1;
-        } else if(sm == DONE){
+        } else if (sm == DONE) {
             return 1;
         }
     }
     return 0;
 }
 
-int parse_perm_arg_octal(char* arg){
-    if(strlen(arg) != 4) return 1;
-    if(arg[0] != '0') return 1;
-    for(int i = 1; i < 4; i++) if(atoi(&arg[i]) > 7 || atoi(&arg[i]) < 0) return 1;
+int parse_perm_arg_octal(char* arg) {
+    if (strlen(arg) != 4) return 1;
+    if (arg[0] != '0') return 1;
+    for (int i = 1; i < 4; i++)
+        if (atoi(&arg[i]) > 7 || atoi(&arg[i]) < 0) return 1;
     return 0;
 }
 
@@ -625,16 +623,16 @@ int parse_argv(int argc, char* argv[]) {
     }
 
     int perms = argc - 2, start_index = 1;
-    for(int i = 1; i < argc; i++) {
-        if(argv[i][0] == '-'){
+    for (int i = 1; i < argc; i++) {
+        if (argv[i][0] == '-') {
             start_index++;
             perms--;
-        }
-        else
+        } else {
             break;
+        }
     }
     for (int i = start_index; perms > 0; i++, perms--) {
-        if(parse_perm_arg(argv[i]) && parse_perm_arg_octal(argv[i])) return 1;
+        if (parse_perm_arg(argv[i]) && parse_perm_arg_octal(argv[i])) return 1;
     }
     return 0;
 }
@@ -643,36 +641,36 @@ int parse_argv(int argc, char* argv[]) {
  * Gets the input on argv into a string
  *@param str destination of the input in argv
  */ 
-void format_argv(int argc, char *argv[], char* str){
+void format_argv(int argc, char *argv[], char* str) {
     strcpy(str, "");
-    for (int i = 0; i < argc; i++){
+    for (int i = 0; i < argc; i++) {
         strcat(str, " ");
         strcat(str, argv[i]);
     }
 }
 
 
-int main(int argc, char* argv[], char* envp[]){
+int main(int argc, char* argv[], char* envp[]) {
     char exit_code[2];
     strcpy(exit_code, "0");
 
     // verificar se há argumentos suficientes para correr o programa
     // Outdated, devido às opções já não funciona como deve
-    if(parse_argv(argc, argv)){
+    if (parse_argv(argc, argv)) {
         fprintf(stderr, "Invalid arguments.\n");
         strcpy(exit_code, "1");
     } else {
         char* str = (char *) malloc(100*sizeof(char));
         format_argv(argc, argv, str);
-        
-        if(set_handlers()){
+
+        if (set_handlers()) {
             strcpy(exit_code, "1");
         } else {
             log_start();
             write_to_log(PROC_CREATE, str);
 
             int verbosity = 0, recursive = 0, index;
-            if(get_options(&verbosity, &recursive, &index, argc, argv)){
+            if (get_options(&verbosity, &recursive, &index, argc, argv)) {
                 strcpy(exit_code, "1");
             } else {
                 char *input = argv[index];
@@ -682,7 +680,7 @@ int main(int argc, char* argv[], char* envp[]){
                 get_input(input, in, file_name, index, argc, argv);
                 curr_file = file_name;
 
-                if(run_xmod(in, file_name, verbosity, recursive, argc, argv) != 0){
+                if (run_xmod(in, file_name, verbosity, recursive, argc, argv) != 0) {
                     strcpy(exit_code, "1");
                 }
                 free(in);
@@ -690,10 +688,10 @@ int main(int argc, char* argv[], char* envp[]){
         }
         free(str);
     }
-    
+
 
     write_to_log(PROC_EXIT, exit_code);
-    if(getpid() == FIRST_PROCESS_PID) wait(0);
+    if (getpid() == FIRST_PROCESS_PID) wait(0);
 
     return atoi(exit_code);
 }
