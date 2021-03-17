@@ -26,6 +26,7 @@ struct timespec start_time, end_time;
 long int time_start, time_end;
 unsigned int nftot = 0;
 unsigned int nfmod = 0;
+char curr_file[100];    //currently FILE/DIR passed to argv, needed to use in sig_handler
 
 
 int xmod(char* in, char* file_name, int verbosity);
@@ -117,7 +118,7 @@ void sig_handler(int signo) {
         sprintf(sig_received, "SIGINT");
         write_to_log(SIGNAL_RECV, sig_received);
         
-        fprintf(stdout, "%i ; %s ; %i ; %i\n", getpid(), "FILENAME", nftot, nfmod);    
+        fprintf(stdout, "%i ; %s ; %i ; %i\n", getpid(), curr_file, nftot, nfmod);    
 
         if(getpid() == FIRST_PROCESS_PID){ //The eldest controls the signals
             sleep(0.25);
@@ -339,7 +340,8 @@ int recursive_xmod(char* cmd, char* dir_name, int verbosity, int argc, char *arg
                         return 1;
                     }
 
-                }  else {
+                }  
+                else {
                     wait(0);
                 }
             }
@@ -518,6 +520,8 @@ int run_xmod(char* in, char* file_name, int verbosity, int recursive, int argc, 
     }
 
     __mode_t arg_info = st.st_mode;
+    strcpy(curr_file, argv[argc - 1]);
+    //fprintf(stdout, "Current_file: %s\n", curr_file);
 
     if (recursive) {
         if ((arg_info & __S_IFDIR) != 0) {
@@ -583,6 +587,7 @@ int main(int argc, char* argv[], char* envp[]){
             if (access(file_name, F_OK)) {
                 perror("access");
                 strcpy(exit_code, "1");
+
             } else {
                 get_input(input, in, file_name, index, argc, argv);
                 if(run_xmod(in, file_name, verbosity, recursive, argc, argv) != 0){
