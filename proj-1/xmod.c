@@ -39,6 +39,7 @@ long int get_running_time();
 int log_start();
 void format_argv(int argc, char* argv[], char* str);
 int parse_argv(int argc, char* argv[]);
+void print_changes(__mode_t new_mode, __mode_t old_mode, int verbosity, char* file_name);
 
 
 /**
@@ -303,7 +304,7 @@ void concatenate_dir_file(char* dir, char* file_name, char* ret){
 }
 
 int recursive_xmod(char* cmd, char* dir_name, int verbosity, int argc, char *argv[]){
-    sleep(2);
+    //sleep(2);
     char copy[100];
     char file_name[100];
     DIR* d;
@@ -480,7 +481,7 @@ void get_input(char* input, char* in, char* file_name, int index, int argc, char
 
 void print_changes(__mode_t new_mode, __mode_t old_mode, int verbosity, char* file_name){
     if(verbosity == 3){
-        printf("neither symbolic link '%s' nor referent has been changed", file_name);
+        printf("neither symbolic link '%s' nor referent has been changed\n", file_name);
         return;
     }
 
@@ -553,28 +554,89 @@ int run_xmod(char* in, char* file_name, int verbosity, int recursive, int argc, 
     }
 }
 
+int parse_perm_arg(char* arg){
+    if(strlen(arg) < 3) return 1;
+
+    enum state_machine {TARGET, OPERATOR, FIRST, SECOND, THIRD, DONE};
+    enum state_machine sm = TARGET;
+    for(int i = 0; i < strlen(arg); i++){
+        if(sm == TARGET){
+            if(arg[i] == 'a' || arg[i] == 'g' || arg[i] == 'u') {
+                sm = OPERATOR;
+                continue;
+            }
+            return 1;
+        } else if (sm == OPERATOR){
+            if(arg[i] == '+' || arg[i] == '-' || arg[i] == '='){
+                sm = FIRST;
+                continue;
+            }
+            return 1;
+        } else if(sm == FIRST){
+            if(arg[i] == 'r'){
+                sm = SECOND;
+                continue;
+            } else if (arg[i] == 'w'){
+                sm = THIRD;
+                continue;
+            } else if (arg[i] == 'x'){
+                sm = DONE;
+                continue;
+            }
+            return 1;
+        } else if (sm == SECOND){
+            if(arg[i] == 'w'){
+                sm = THIRD;
+                continue;
+            } else if(arg[i] == 'x'){
+                sm = DONE;
+                continue;
+            }
+            return 1;
+        } else if (sm == THIRD){
+            if(arg[i] == 'x'){
+                sm = DONE;
+                continue;
+            }
+            return 1;
+        } else if(sm == DONE){
+            return 1;
+        }
+    }
+    return 0;
+}
+
+int parse_perm_arg_octal(char* arg){
+    if(strlen(arg) != 4) return 1;
+    if(arg[0] != '0') return 1;
+    for(int i = 1; i < 4; i++) if(atoi(&arg[i]) > 7 || atoi(&arg[i]) < 0) return 1;
+    return 0;
+}
+
 int parse_argv(int argc, char* argv[]) {
     if (argc <= 2) {
         return 1;
     }
-    for (int i = 0; i < argc; i++) {
-        if ((argv[i][0] == "a" || argv[i][0] == "u" || argv[i][0] == "g" || argv[i][0] == "o") && argv[i][1] == "=") {
-            for(int j = 2; j < strlen(argv[i]); j++) {
-                if(argv[i][j] != "r" && argv[i][j] != "w" && argv[i][j] != "x") {
-                    return 1;
-                }
-            }
-            return 0;
-        }
-        if (argv[i][0] == "0" && strlen(argv[i]) == 4) {
-            for(int j = 0; j < strlen(argv[i]); j++) {
-                if(atoi(argv[i][j]) < 0 || atoi(argv[i][j]) > 7)
-                    return 1;
-            }
-            return 0;
-        }
+
+    if (access(argv[argc - 1], F_OK)) {
+        perror("access");
+        return 1;
+
     }
-    return 1;
+
+    int perms = argc - 2, start_index = 1;
+    for(int i = 1; i < argc; i++) {
+        if(argv[i][0] == '-'){
+            start_index++;
+            perms--;
+        }
+        else
+            break;
+    }
+    for (int i = start_index; perms > 0; i++, perms--) {
+        if(parse_perm_arg(argv[i]) && parse_perm_arg_octal(argv[i])) return 1;
+    }
+    return 0;
 }
 
 /**
@@ -596,46 +658,43 @@ int main(int argc, char* argv[], char* envp[]){
 
     // verificar se há argumentos suficientes para correr o programa
     // Outdated, devido às opções já não funciona como deve
-    if(argc <= 2){
-        fprintf(stderr, "Invalid number of arguments\n");
-        strcpy(exit_code, "1");
-    }
-    
-    char* str = (char *) malloc(100*sizeof(char));
-    format_argv(argc, argv, str);
-    
-    if(set_handlers()){
+    if(parse_argv(argc, argv)){
+        fprintf(stderr, "Invalid arguments.\n");
         strcpy(exit_code, "1");
     } else {
-        log_start();
-        write_to_log(PROC_CREATE, str);
-
-        int verbosity = 0, recursive = 0, index;
-        if(get_options(&verbosity, &recursive, &index, argc, argv)){
+        char* str = (char *) malloc(100*sizeof(char));
+        format_argv(argc, argv, str);
+        
+        if(set_handlers()){
             strcpy(exit_code, "1");
         } else {
-            char *input = argv[index];
-            char *in = (char *) malloc (18 * sizeof(char));
-            char *file_name = argv[argc - 1];
-            if (access(file_name, F_OK)) {
-                perror("access");
-                strcpy(exit_code, "1");
+            log_start();
+            write_to_log(PROC_CREATE, str);
 
+            int verbosity = 0, recursive = 0, index;
+            if(get_options(&verbosity, &recursive, &index, argc, argv)){
+                strcpy(exit_code, "1");
             } else {
+                char *input = argv[index];
+                char *in = (char *) malloc (18 * sizeof(char));
+                char *file_name = argv[argc - 1];
+
                 get_input(input, in, file_name, index, argc, argv);
                 curr_file = file_name;
+
                 if(run_xmod(in, file_name, verbosity, recursive, argc, argv) != 0){
                     strcpy(exit_code, "1");
                 }
+                free(in);
             }
-            free(in);
         }
+        free(str);
     }
+    
 
     write_to_log(PROC_EXIT, exit_code);
     if(getpid() == FIRST_PROCESS_PID) wait(0);
 
-    free(str);
     return atoi(exit_code);
 }
 
