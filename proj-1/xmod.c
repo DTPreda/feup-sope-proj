@@ -30,7 +30,7 @@ void concatenate_dir_file(char* dir, char* file_name, char* ret) {
 
 int recursive_xmod(char* cmd, char* dir_name, int verbosity, int argc, char *argv[]) {
     char copy[100];
-    char file_name[100];
+    char file_name[FILENAME_MAX];
     DIR* d;
     struct dirent *dir;
     d = opendir(dir_name);
