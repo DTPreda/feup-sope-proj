@@ -155,7 +155,7 @@ int main(int argc, char* argv[], char* envp[]) {
         fprintf(stderr, "Invalid arguments.\n");
         strcpy(exit_code, "1");
     } else {
-        char* str = (char *) malloc(100*sizeof(char));
+        char* str = (char *) malloc(FILENAME_MAX*sizeof(char));
         format_argv(argc, argv, str);
         if (set_handlers()) {
             strcpy(exit_code, "1");
