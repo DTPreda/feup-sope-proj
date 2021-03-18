@@ -155,7 +155,7 @@ int main(int argc, char* argv[], char* envp[]) {
         fprintf(stderr, "Invalid arguments.\n");
         strcpy(exit_code, "1");
     } else {
-        char* str = (char *) malloc(FILENAME_MAX*sizeof(char));
+        char str[FILENAME_MAX];
         format_argv(argc, argv, str);
         if (set_handlers()) {
             strcpy(exit_code, "1");
@@ -167,17 +167,15 @@ int main(int argc, char* argv[], char* envp[]) {
                 strcpy(exit_code, "1");
             } else {
                 char *input = argv[index];
-                char *in = (char *) malloc (18 * sizeof(char));
+                char in[18];
                 char *file_name = argv[argc - 1];
                 get_input(input, in, file_name, index, argc, argv);
                 curr_file = file_name;
                 if (run_xmod(in, file_name, verbosity, recursive, argc, argv) != 0) {
                     strcpy(exit_code, "1");
                 }
-                free(in);
             }
         }
-        free(str);
     }
 
 
