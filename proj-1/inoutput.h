@@ -10,5 +10,6 @@ int get_options(int* verbose, int* recursive, int* index, int argc, char* argv[]
 void get_input(char* input, char* in, char* file_name, int index, int argc, char* argv[]);
 void print_changes(__mode_t new_mode, __mode_t old_mode, int verbosity, char* file_name);
 void str_mode(__mode_t mode, char * buf);
+int determine_executable_path(char* argv);
 
 #endif  // _INOUTPUT_H_

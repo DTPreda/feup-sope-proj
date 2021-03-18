@@ -4,6 +4,7 @@
 #include <sys/stat.h>
 #include <dirent.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "./log.h"
 #include "./sig_handling.h"
@@ -11,13 +12,14 @@
 #include "./xmod.h"
 #include "./perms.h"
 
+#define GetCurrentDir getcwd
 
 extern struct timespec start_time, end_time;
 extern long int time_start, time_end;
 extern unsigned int nftot;
 extern unsigned int nfmod;
 extern char* curr_file;  // currently FILE/DIR passed to argv
-
+extern char executable_path[FILENAME_MAX];
 
 void concatenate_dir_file(char* dir, char* file_name, char* ret) {
     strcpy(ret, "");
@@ -62,9 +64,10 @@ int recursive_xmod(char* cmd, char* dir_name, int verbosity, int argc, char *arg
                     concatenate_dir_file(dir_name, dir->d_name, file_name);
 
                     argv[argc - 1] = file_name;
-                    if (execv("xmod", argv) == -1) {
+                    //printf("%s\n", executable_path);
+                    if (execv(executable_path, argv) == -1) {
                         argv[argc - 1] = dir_name;
-                        perror("execve");
+                        perror("execv");
                         return 1;
                     }
                     argv[argc - 1] = dir_name;
@@ -119,6 +122,10 @@ int run_xmod(char* in, char* file_name, int verbosity, int recursive, int argc, 
     }
     __mode_t arg_info = st.st_mode;
     if (recursive) {
+        if(determine_executable_path(argv[0]) != 0){
+            fprintf(stderr, "Could not find executable path, impossible to run recursively.\n");
+            return 1;
+        }
         if ((arg_info & __S_IFDIR) != 0) {
             if (recursive_xmod(in, file_name, verbosity, argc, argv)) {
                 return 1;
@@ -179,4 +186,3 @@ int main(int argc, char* argv[], char* envp[]) {
 
     return atoi(exit_code);
 }
-

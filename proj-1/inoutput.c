@@ -10,6 +10,8 @@
 #include "./log.h"
 #include "./inoutput.h"
 
+char executable_path[FILENAME_MAX];
+
 /**
  * Gets the input on argv into a string
  *@param str destination of the input in argv
@@ -226,3 +228,39 @@ void str_mode(__mode_t mode, char * buf) {
   buf[9] = '\0';
 }
 
+int determine_executable_path(char* argv){
+    //printf("%s\n", argv);
+    if(argv[0] == '/'){
+        strcpy(executable_path, argv);
+        return 0;
+    }
+
+    for(int i = 0; i < strlen(argv); i++){
+        if(argv[i] == '/'){
+            char buff[FILENAME_MAX];
+            getcwd(buff, FILENAME_MAX );
+            strcpy(executable_path, buff);
+            strcat(executable_path, "/");
+            strcat(executable_path, argv);
+            return 0;
+        }
+    }
+
+    char path[FILENAME_MAX];
+    strcpy(path, getenv("PATH"));
+
+    //printf("%s\n", path);
+
+    char* input = strtok(path, ":");
+    char tmp[FILENAME_MAX];
+    for ( ; input != NULL; ) {
+        strcpy(tmp, input); strcat(tmp, "/xmod");
+        if(access(tmp, F_OK) == 0){
+            strcpy(executable_path, tmp);
+            return 0;
+        }
+        input = strtok(NULL, ":");
+    }
+
+    return 1;
+}
