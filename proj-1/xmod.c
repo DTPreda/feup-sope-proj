@@ -12,8 +12,6 @@
 #include "./xmod.h"
 #include "./perms.h"
 
-#define GetCurrentDir getcwd
-
 extern struct timespec start_time, end_time;
 extern long int time_start, time_end;
 extern unsigned int nftot;
@@ -29,7 +27,6 @@ void concatenate_dir_file(char* dir, char* file_name, char* ret) {
 }
 
 int recursive_xmod(char* cmd, char* dir_name, int verbosity, int argc, char *argv[]) {
-    sleep(1);
     char copy[100];
     char file_name[FILENAME_MAX];
     DIR* d;

@@ -26,20 +26,19 @@ void sig_handler(int signo) {
     if (signo == SIGINT) {
 
         fprintf(stdout, "%i ; %s ; %i ; %i\n", getpid(), curr_file, nftot, nfmod);
-        // The eldest controls the signals
+        // First process sends signals to the rest of the group
         if (getpid() == FIRST_PROCESS_PID) {
-            sleep(0.25);
             int option;
             char msg1[15], msg2[15];
             snprintf(msg1, sizeof(msg1), "SIGUSR1 : %d", getpid());
             snprintf(msg2, sizeof(msg2), "SIGCONT : %d", getpid());
 
+            sleep(0.25);
             fprintf(stdout, "Would you wish to proceed? [Y/N]\n");
             while ( (option = getchar()) == '\n') {}
 
             write_to_log(SIGNAL_SENT, msg2);
             killpg(getpgrp(), SIGCONT);
-            sleep(0.25);
 
             switch (option) {
                 case 'Y':
@@ -60,7 +59,7 @@ void sig_handler(int signo) {
         } else {    
             pause();
         }
-    } else if (signo == SIGUSR1/*|| signo == SIGHUP || signo == SIGQUIT || signo == SIGSEGV || signo == SIGTERM*/) {
+    } else if (signo == SIGUSR1) {
         if (getpid() == FIRST_PROCESS_PID) wait(0);
         write_to_log(PROC_EXIT, "1");
         exit(1);
