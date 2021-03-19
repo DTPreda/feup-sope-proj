@@ -19,12 +19,15 @@ extern unsigned int nfmod;
 extern char* curr_file;  // currently FILE/DIR passed to argv
 extern char executable_path[FILENAME_MAX];
 
+
+
 void concatenate_dir_file(char* dir, char* file_name, char* ret) {
     strcpy(ret, "");
     strcat(ret, dir);
     strcat(ret, "/");  // filename = dir_name/
     strcat(ret, file_name);
 }
+
 
 int recursive_xmod(char* cmd, char* dir_name, int verbosity, int argc, char *argv[]) {
     char copy[100];
@@ -81,7 +84,6 @@ int recursive_xmod(char* cmd, char* dir_name, int verbosity, int argc, char *arg
     }
     return 1;
 }
-
 
 
 int xmod(char* in, char* file_name, int verbosity) {

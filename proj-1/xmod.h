@@ -12,10 +12,47 @@
 #define START_TIME "START_TIME"
 
 
+
+/**
+ * call recursive or single file xmod consonant the file introduced
+ * @param in input by user
+ * @param file_name file to be changed
+ * @param verbosity verbosity flag
+ * @param recursive recursive flag
+ * @param argc number of args
+ * @param argv args
+ */ 
+int run_xmod(char* in, char* file_name, int verbosity, int recursive, int argc, char* argv[]);
+
+
+/**
+ * Parses and changes the permissions of a single file
+ * introduced by user 
+ * @param in input(permissions)
+ * @param file_name file to change
+ * @param verbosity verbosity flag
+ */ 
 int xmod(char* in, char* file_name, int verbosity);
+
+/**
+ * recursive function that changes(or mantains) the permissions of the file
+ * mentioned in dir_name
+ * @param cmd command line input by user
+ * @param dir_name name of directory to change permissions
+ * @param verbosity flag that says if user want verbosity output
+ * @param argc number of args
+ * @param argv args
+ */ 
 int recursive_xmod(char* cmd, char* dir_name, int verbosity, int argc, char* argv[]);
-void str_mode(__mode_t mode, char* buf);
-void print_changes(__mode_t new_mode, __mode_t old_mode, int verbosity, char* file_name);
+
+
+/**
+ *  Concatenates two strings on the format dir/file_name
+ * @param dir first string
+ * @param file_name second string to concatenate
+ * @param ret string with result of concatenation
+ */ 
+void concatenate_dir_file(char* dir, char* file_name, char* ret);
 
 
 #endif  // XMOD_H_

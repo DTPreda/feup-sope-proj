@@ -1,0 +1,58 @@
+0 ; 4905 ; PROC_CREATE ; ./xmod -vR a=rx xmodtest/
+0 ; 4905 ; FILE_MODF ; xmodtest/ : 777 : 555
+1 ; 4906 ; PROC_CREATE ; ./xmod -vR a=rx xmodtest//xmodtest2
+1 ; 4906 ; FILE_MODF ; xmodtest//xmodtest2 : 777 : 555
+2 ; 4907 ; PROC_CREATE ; ./xmod -vR a=rx xmodtest//xmodtest2/another_Sub
+2 ; 4907 ; FILE_MODF ; xmodtest//xmodtest2/another_Sub : 777 : 555
+3 ; 4908 ; PROC_CREATE ; ./xmod -vR a=rx xmodtest//xmodtest2/another_Sub/qw eÇ+=)\5 fr321();0
+3 ; 4908 ; FILE_MODF ; xmodtest//xmodtest2/another_Sub/qw eÇ+=)\5 fr321();0 : 777 : 555
+4 ; 4909 ; PROC_CREATE ; ./xmod -vR a=rx xmodtest//xmodtest2/another_Sub/qw eÇ+=)\5 fr321();0/dontknow
+4 ; 4909 ; FILE_MODF ; xmodtest//xmodtest2/another_Sub/qw eÇ+=)\5 fr321();0/dontknow : 777 : 555
+5 ; 4909 ; FILE_MODF ; xmodtest//xmodtest2/another_Sub/qw eÇ+=)\5 fr321();0/dontknow/empty_file : 777 : 555
+6 ; 4910 ; PROC_CREATE ; ./xmod -vR a=rx xmodtest//xmodtest2/another_Sub/qw eÇ+=)\5 fr321();0/dontknow/folder
+6 ; 4910 ; FILE_MODF ; xmodtest//xmodtest2/another_Sub/qw eÇ+=)\5 fr321();0/dontknow/folder : 777 : 555
+6 ; 4910 ; FILE_MODF ; xmodtest//xmodtest2/another_Sub/qw eÇ+=)\5 fr321();0/dontknow/folder/entername : 777 : 555
+6 ; 4910 ; FILE_MODF ; xmodtest//xmodtest2/another_Sub/qw eÇ+=)\5 fr321();0/dontknow/folder/template : 777 : 555
+6 ; 4910 ; FILE_MODF ; xmodtest//xmodtest2/another_Sub/qw eÇ+=)\5 fr321();0/dontknow/folder/enterthename : 777 : 555
+6 ; 4910 ; FILE_MODF ; xmodtest//xmodtest2/another_Sub/qw eÇ+=)\5 fr321();0/dontknow/folder/terminal : 777 : 555
+7 ; 4911 ; PROC_CREATE ; ./xmod -vR a=rx xmodtest//xmodtest2/another_Sub/qw eÇ+=)\5 fr321();0/dontknow/folder/new_folder
+8 ; 4911 ; FILE_MODF ; xmodtest//xmodtest2/another_Sub/qw eÇ+=)\5 fr321();0/dontknow/folder/new_folder : 777 : 555
+8 ; 4911 ; FILE_MODF ; xmodtest//xmodtest2/another_Sub/qw eÇ+=)\5 fr321();0/dontknow/folder/new_folder/arrange : 777 : 55
+8 ; 4911 ; FILE_MODF ; xmodtest//xmodtest2/another_Sub/qw eÇ+=)\5 fr321();0/dontknow/folder/new_folder/Help : 777 : 555
+8 ; 4911 ; FILE_MODF ; xmodtest//xmodtest2/another_Sub/qw eÇ+=)\5 fr321();0/dontknow/folder/new_folder/items : 777 : 555
+8 ; 4911 ; PROC_EXIT ; 0
+9 ; 4910 ; SIGNAL_RECV ; 17
+10 ; 4912 ; PROC_CREATE ; ./xmod -vR a=rx xmodtest//xmodtest2/another_Sub/qw eÇ+=)\5 fr321();0/dontknow/folder/foldernew
+10 ; 4912 ; FILE_MODF ; xmodtest//xmodtest2/another_Sub/qw eÇ+=)\5 fr321();0/dontknow/folder/foldernew : 777 : 555
+10 ; 4912 ; FILE_MODF ; xmodtest//xmodtest2/another_Sub/qw eÇ+=)\5 fr321();0/dontknow/folder/foldernew/videos : 777 : 555
+10 ; 4912 ; FILE_MODF ; xmodtest//xmodtest2/another_Sub/qw eÇ+=)\5 fr321();0/dontknow/folder/foldernew/pictures : 777 : 55
+10 ; 4912 ; FILE_MODF ; xmodtest//xmodtest2/another_Sub/qw eÇ+=)\5 fr321();0/dontknow/folder/foldernew/trash2 : 777 : 555
+10 ; 4912 ; PROC_EXIT ; 0
+10 ; 4910 ; SIGNAL_RECV ; 17
+10 ; 4910 ; PROC_EXIT ; 0
+10 ; 4909 ; SIGNAL_RECV ; 17
+11 ; 4909 ; FILE_MODF ; xmodtest//xmodtest2/another_Sub/qw eÇ+=)\5 fr321();0/dontknow/document : 777 : 555
+11 ; 4909 ; FILE_MODF ; xmodtest//xmodtest2/another_Sub/qw eÇ+=)\5 fr321();0/dontknow/paste : 777 : 555
+11 ; 4909 ; PROC_EXIT ; 0
+11 ; 4908 ; SIGNAL_RECV ; 17
+11 ; 4908 ; FILE_MODF ; xmodtest//xmodtest2/another_Sub/qw eÇ+=)\5 fr321();0/random_name : 777 : 555
+11 ; 4908 ; FILE_MODF ; xmodtest//xmodtest2/another_Sub/qw eÇ+=)\5 fr321();0/name_random : 777 : 555
+11 ; 4908 ; PROC_EXIT ; 0
+11 ; 4907 ; SIGNAL_RECV ; 17
+11 ; 4907 ; FILE_MODF ; xmodtest//xmodtest2/another_Sub/okdwa : 777 : 555
+11 ; 4907 ; PROC_EXIT ; 0
+12 ; 4906 ; SIGNAL_RECV ; 17
+13 ; 4913 ; PROC_CREATE ; ./xmod -vR a=rx xmodtest//xmodtest2/oi.e
+13 ; 4913 ; FILE_MODF ; xmodtest//xmodtest2/oi.e : 777 : 555
+13 ; 4913 ; FILE_MODF ; xmodtest//xmodtest2/oi.e/dwadw : 777 : 555
+13 ; 4913 ; PROC_EXIT ; 0
+13 ; 4906 ; SIGNAL_RECV ; 17
+14 ; 4914 ; PROC_CREATE ; ./xmod -vR a=rx xmodtest//xmodtest2/sub+folder
+14 ; 4914 ; FILE_MODF ; xmodtest//xmodtest2/sub+folder : 777 : 555
+14 ; 4914 ; FILE_MODF ; xmodtest//xmodtest2/sub+folder/file : 777 : 555
+14 ; 4914 ; PROC_EXIT ; 0
+15 ; 4906 ; SIGNAL_RECV ; 17
+15 ; 4906 ; FILE_MODF ; xmodtest//xmodtest2/more-tests : 777 : 555
+15 ; 4906 ; PROC_EXIT ; 0
+15 ; 4905 ; SIGNAL_RECV ; 17
+15 ; 4905 ; PROC_EXIT ; 0
