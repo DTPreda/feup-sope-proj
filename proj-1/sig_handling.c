@@ -4,7 +4,6 @@
 #include <string.h>
 #include <unistd.h>
 
-
 #include "./xmod.h"
 #include "./sig_handling.h"
 #include "./log.h"
@@ -13,18 +12,12 @@ unsigned int nftot = 0;
 unsigned int nfmod = 0;
 char* curr_file;  // currently FILE/DIR passed to argv
 
-/**
- * Global Handler of signals, it writes into a file the information 
- * about the signal received
- */ 
 void sig_handler(int signo) {
-    
     char sig_received[15];
     snprintf(sig_received, sizeof(sig_received), "%i", signo);
     write_to_log(SIGNAL_RECV, sig_received);
 
     if (signo == SIGINT) {
-
         fprintf(stdout, "%i ; %s ; %i ; %i\n", getpid(), curr_file, nftot, nfmod);
         // First process sends signals to the rest of the group
         if (getpid() == FIRST_PROCESS_PID) {
@@ -56,7 +49,7 @@ void sig_handler(int signo) {
                     killpg(getpgrp(), SIGUSR1);
                     break;
             }
-        } else {    
+        } else {
             pause();
         }
     } else if (signo == SIGUSR1) {
@@ -67,11 +60,9 @@ void sig_handler(int signo) {
 }
 
 
-
 int set_handlers() {
-
-    for(int i = 1; i < 32; i++){
-        if(i != SIGKILL && i != SIGSTOP){
+    for (int i = 1; i < 32; i++) {
+        if (i != SIGKILL && i != SIGSTOP) {
             if (signal(i, sig_handler) == SIG_ERR) {
                 fprintf(stdout, "%i\n", i);
                 perror("signal");
@@ -79,8 +70,5 @@ int set_handlers() {
             }
         }
     }
-
     return 0;
 }
-
-
