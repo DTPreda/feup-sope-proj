@@ -4,7 +4,6 @@
 #include <unistd.h>
 #include <ctype.h>
 
-
 #include "./xmod.h"
 #include "./sig_handling.h"
 #include "./log.h"
@@ -12,10 +11,6 @@
 
 char executable_path[FILENAME_MAX];
 
-/**
- * Gets the input on argv into a string
- *@param str destination of the input in argv
- */ 
 void format_argv(int argc, char *argv[], char* str) {
     strcpy(str, "");
     for (int i = 0; i < argc; i++) {
@@ -24,12 +19,11 @@ void format_argv(int argc, char *argv[], char* str) {
     }
 }
 
-
 int parse_argv(int argc, char* argv[]) {
     if (argc <= 2) {
         return 1;
     }
-
+    
     if (access(argv[argc - 1], F_OK)) {
         perror("access");
         return 1;
@@ -111,9 +105,6 @@ int parse_perm_arg(char* arg) {
     return 0;
 }
 
-/**
- * Converts octal input to format "u=--- g=--- o=---", where "-" can be 'r' 'w' or 'x'
- */
 void format_octal(char *octal, char* in) {
     strcpy(in, "u=");
     for (int i = 1; i < strlen(octal); i++) {
@@ -183,13 +174,13 @@ int get_options(int* verbose, int* recursive, int* index, int argc, char* argv[]
 }
 
 
-void get_input(char* input, char* in, char* file_name, int index, int argc, char* argv[]) {
+void get_input(char* input, char* in, int index, int argc, char* argv[]) {
     if (input[0] == '0') {  // get input
         format_octal(input, in);
     } else {
         strcpy(in, "");
-        for (int i = index; i < argc - 1; i++) {  // get inputs u=rwx g=rx o=wx
-            strcat(in, argv[i]);
+        for (int i = index; i < argc - 1; i++) {  // get input in the form
+            strcat(in, argv[i]);                  // u=rwx g=rx o=wx
             strcat(in, " ");
         }
     }
@@ -238,7 +229,7 @@ int determine_executable_path(char* argv){
     for(int i = 0; i < strlen(argv); i++){
         if(argv[i] == '/'){
             char buff[FILENAME_MAX];
-            getcwd(buff, FILENAME_MAX );
+            getcwd(buff, FILENAME_MAX);
             strcpy(executable_path, buff);
             strcat(executable_path, "/");
             strcat(executable_path, argv);

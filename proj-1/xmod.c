@@ -168,7 +168,7 @@ int main(int argc, char* argv[], char* envp[]) {
                 char *input = argv[index];
                 char in[18];
                 char *file_name = argv[argc - 1];
-                get_input(input, in, file_name, index, argc, argv);
+                get_input(input, in, index, argc, argv);
                 curr_file = file_name;
                 if (run_xmod(in, file_name, verbosity, recursive, argc, argv) != 0) {
                     strcpy(exit_code, "1");

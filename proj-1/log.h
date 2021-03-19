@@ -3,9 +3,9 @@
 
 /**
  * @brief Setup of environment variables to store the starting time of program
- * and eldest pid
+ * and eldest pid.
  * 
- * @return 0 on success, 1 otherwise
+ * @return 0 on success, 1 otherwise.
  */
 int log_start();
 
@@ -13,9 +13,9 @@ int log_start();
  * @brief Writes to the log file specified in the LOG_FILENAME environment
  * variable some info regarding the execution of the program.
  * 
- * @param event Type of event to write
+ * @param event Type of event to write.
  * 
- * @param info Specific info regarding the event
+ * @param info Specific info regarding the event.
  */ 
 void write_to_log(unsigned int event, char* info);
 

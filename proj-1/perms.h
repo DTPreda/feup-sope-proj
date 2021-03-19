@@ -8,11 +8,11 @@
  * While parse_perms does the formatting of the string, this function actually
  * converts the bits according to the specified mode changes.
  * 
- * @param r Read Permisson. 0 if not enabled, 1 otherwise
+ * @param r Read Permisson. 0 if not enabled, 1 otherwise.
  * 
- * @param w Write Permisson. 0 if not enabled, 1 otherwise
+ * @param w Write Permisson. 0 if not enabled, 1 otherwise.
  * 
- * @param x Execute Permisson. 0 if not enabled, 1 otherwise
+ * @param x Execute Permisson. 0 if not enabled, 1 otherwise.
  * 
  * @param op One of +, - , =. For adding (+), subtracting (-) or defining (=) the permissions.
  * 
