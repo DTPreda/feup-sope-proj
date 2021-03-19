@@ -7,7 +7,7 @@
 #
 set -m
 echo $$
-LOGDIR="/tmp"
+LOGDIR="/tmp/201904726"
 PROGCH="chmod"
 
 case $# in
@@ -16,7 +16,7 @@ case $# in
 esac
 
 # backup copy
-mkdir $LOGDIR/backupMP1/201906334
+mkdir $LOGDIR/backupMP1
 rm -rf $LOGDIR/backupMP1/`basename $DIR`
 cp -rp --remove-destination $DIR $LOGDIR/backupMP1/`basename $DIR`
 
@@ -43,7 +43,7 @@ ARGS6="-R 0777 $DIR"
 for TESTN in 1 2 3 4 5 6
 do
 	eval ARGS=\${ARGS$TESTN}
-	$PROGCH $ARGS | sort -b > $LOGDIR/log201906334.$TESTN.sorted
+	$PROGCH $ARGS | sort -b > $LOGDIR/log201904726.$TESTN.sorted
 done
 
 # reset original dir/files
@@ -56,9 +56,9 @@ then
 	for TESTN in 1 2 3 4 5 6
 	do
 		eval ARGS=\${ARGS$TESTN}
-		$PROGX $ARGS | sort -b > $LOGDIR/log201906334.$TESTN.sorted
+		$PROGX $ARGS | sort -b > $LOGDIR/log201904726.$TESTN.sorted
 
-		diff -b $LOGDIR/log201906334.$TESTN.sorted $LOGDIR/log201906334.$TESTN.sorted
+		diff -b $LOGDIR/log201904726.$TESTN.sorted $LOGDIR/log201904726.$TESTN.sorted
 	done
 fi
 
