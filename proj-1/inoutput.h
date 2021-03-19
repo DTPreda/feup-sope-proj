@@ -33,7 +33,7 @@ int parse_perm_arg_octal(char* arg);
 int parse_perm_arg(char* arg);
 
 /**
- * @brief Formats the input of argv into a signle string.
+ * @brief Formats the input of argv into a single string.
  * 
  * @param argc Number of arguments in argv.
  * 

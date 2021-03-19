@@ -6,7 +6,7 @@
 # V.3 corrects a NOT SO SMALL problem: in the previous version, xmod run over the $DIR changed by chmod!
 #
 set -m
-LOGDIR="/tmp"
+LOGDIR="/tmp/201904726"
 PROGCH="chmod"
 
 case $# in

@@ -156,22 +156,30 @@ int main(int argc, char* argv[], char* envp[]) {
         char str[FILENAME_MAX];
         format_argv(argc, argv, str);
         if (set_handlers()) {
+            fprintf(stderr, "Handlers could not be set.\n");
             strcpy(exit_code, "1\0");
         } else {
-            log_start();
-            write_to_log(PROC_CREATE, str);
-            int verbosity = 0, recursive = 0, index;
-            if (get_options(&verbosity, &recursive, &index, argc, argv)) {
+            if (log_start() != 0) {
+                fprintf(stderr, "Failed to initialize log related variables.\n");
                 strcpy(exit_code, "1\0");
             } else {
-                char *input = argv[index];
-                char in[18];
-                char *file_name = argv[argc - 1];
-                get_input(input, in, index, argc, argv);
-                curr_file = file_name;
-                if (run_xmod(in, file_name, verbosity, recursive, argc, argv) != 0) {
+                write_to_log(PROC_CREATE, str);
+                int verbosity = 0, recursive = 0, index;
+                if (get_options(&verbosity, &recursive, &index, argc, argv)) {
+                    fprintf(stderr, "Failed to get flag options.\n");
                     strcpy(exit_code, "1\0");
+                } else {
+                    char *input = argv[index];
+                    char in[18];
+                    char *file_name = argv[argc - 1];
+                    get_input(input, in, index, argc, argv);
+                    curr_file = file_name;
+                    if (run_xmod(in, file_name, verbosity, recursive, argc, argv) != 0) {
+                        fprintf(stderr, "An error occurred in xmod or xmod related functions.\n");
+                        strcpy(exit_code, "1\0");
+                    }
                 }
+
             }
         }
     }
