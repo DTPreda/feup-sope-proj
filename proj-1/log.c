@@ -12,21 +12,18 @@
 struct timespec start_time, end_time;
 long int time_start, time_end;
 
-/**
- * Setup of environment variables to store the starting time of program
- * and eldest pid
- */
+
 int log_start() {
-    if (getpid() != FIRST_PROCESS_PID) {  // if the process is not the first one to be created => START_TIME will already have been created
+    if (getpid() != FIRST_PROCESS_PID) {
         time_start = atol(getenv(START_TIME));
     } else {
         clock_gettime(CLOCK_REALTIME, &start_time);
-        time_start = start_time.tv_sec * 1000 + start_time.tv_nsec/(pow(10, 6));    // time in ms
+        time_start = start_time.tv_sec * 1000 + start_time.tv_nsec/(pow(10, 6));
 
         char st_time[50];
         snprintf(st_time, sizeof(st_time) , "%ld", time_start);
 
-        int stat = setenv(START_TIME, st_time, 0);           // store the starting time on environment variable
+        int stat = setenv(START_TIME, st_time, 0);
         if (stat == -1) {
             fprintf(stderr, "Error setting environment variable\n");
             return 1;
@@ -76,11 +73,6 @@ void write_to_log(unsigned int event, char* info) {
     }
 }
 
-
-/**
- * Gets the time that the process runned until the moment this function is called
- @return double with the time 
-*/
 long int get_running_time() {
     clock_gettime(CLOCK_REALTIME, &end_time);
     long int delta_ms = end_time.tv_sec * 1000 + end_time.tv_nsec/(pow(10, 6));   // time in ms
