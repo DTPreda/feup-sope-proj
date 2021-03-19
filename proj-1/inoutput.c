@@ -107,41 +107,41 @@ int parse_perm_arg(char* arg) {
 
 
 void format_octal(char *octal, char* in) {
-    strcpy(in, "u=");
+    strcpy(in, "u");
     for (int i = 1; i < strlen(octal); i++) {
         switch (octal[i]) {
         case '7':
-            strcat(in, "rwx");
+            strcat(in, "=rwx");
             break;
         case '6':
-            strcat(in, "rw");
+            strcat(in, "=rw");
             break;
         case '5':
-            strcat(in, "rx");
+            strcat(in, "=rx");
             break;
         case '4':
-            strcat(in, "r");
+            strcat(in, "=r");
             break;
         case '3':
-            strcat(in, "wx");
+            strcat(in, "=wx");
             break;
         case '2':
-            strcat(in, "w");
+            strcat(in, "=w");
             break;
         case '1':
-            strcat(in, "x");
+            strcat(in, "=x");
             break;
         case '0':
-            strcat(in, "");
+            strcat(in, "-rwx");
             break;
         default:
             break;
         }
 
         if (i == 1) {
-            strcat(in, " g=");
+            strcat(in, " g");
         } else if (i == 2) {
-            strcat(in, " o=");
+            strcat(in, " o");
         }
     }
 }

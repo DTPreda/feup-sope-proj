@@ -80,7 +80,7 @@ __mode_t parse_perms(char* perms, char* filename, int verbosity) {
                 break;
             case 'o':
                 target = 'o';
-                mode = perms[1];
+                mode = input[1];
                 break;
             case 'a':
                 mode = perms[1];
