@@ -22,5 +22,12 @@ For that the user can set the environment variable writing the follwing on the c
 
 ## Implementation Details
 
-Xmod was written in a modular fashion, where every function serves a distinct purpose. Also, exit points were minimized to provide better flow of control regarding both signal handling and log writing (minimizes function calls). Regarding signal handling, at any point the user may choose to interrupt the program (by giving a SIGINT, or by writing Ctrl+C on the console). This causes a halt on the processes, by using a SIGSTOP on every child process, and the user may choose to either continue execution, or stop the program entirely. If the user wishes to continue, a SIGCONT is sent to enable the processes to resume their execution, but when the user wants to stop the, after the SIGCONT a SIGUSR1 is sent. This signals notifies the child processes that they have to terminate, and the parent process waits for all of them to finish before stopping.
-In order to control the program execution time of the program, we used an environment variable called START_TIME that stores the time when program run.
+Xmod was written in a modular fashion, where every function serves a distinct purpose. Also, exit points were minimized to provide better flow of control regarding both signal handling and log writing (minimizes function calls). Regarding signal handling, at any point the user may choose to interrupt the program (by giving a SIGINT, usually by writing Ctrl+C on the console). This causes a halt on the processes, by using a SIGSTOP on every child process, and the user may choose to either continue execution, or stop the program entirely. If the user wishes to continue, a SIGCONT is sent to enable the processes to resume their execution, but when the user wants to stop the, after the SIGCONT a SIGUSR1 is sent. This notifies the child processes that they have to terminate, and the parent process waits for all of them to finish before stopping.
+
+In order to control the program execution time, we used an environment variable called START_TIME that stores the time since the program has started, in order to register the events in order at the log file.
+
+Finally, another feature of xmod is that it allows to change more than one target at a time. This means that, if needed, the user can change the mode bits to himself, his group, or the other elements, in a single command. All that is needed is for the different permissions to be separated by spaces, to be recognizes. The user doesn't need to worry about using invalid input. Xmod checks if the input is valid before executing any actions, potentially damaging the file.
+
+## Self Evaluation.
+
+The group believes work was distributed evenly between all members, and so everyone agreed that the participation was of a third for each element, or 33.(3)%
