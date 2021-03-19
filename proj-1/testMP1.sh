@@ -6,7 +6,7 @@
 # V.3 corrects a NOT SO SMALL problem: in the previous version, xmod run over the $DIR changed by chmod!
 #
 set -m
-LOGDIR="/tmp"
+LOGDIR="/tmp/201904726"
 PROGCH="chmod"
 
 case $# in
@@ -42,7 +42,7 @@ ARGS6="-R 0777 $DIR"
 for TESTN in 1 2 3 4 5 6
 do
 	eval ARGS=\${ARGS$TESTN}
-	$PROGCH $ARGS | sort -b > $LOGDIR/log.$PROGCH.$TESTN.sorted
+	$PROGCH $ARGS | sort -b > $LOGDIR/log201904726.$PROGCH.$TESTN.sorted
 done
 
 # reset original dir/files
@@ -55,9 +55,9 @@ then
 	for TESTN in 1 2 3 4 5 6
 	do
 		eval ARGS=\${ARGS$TESTN}
-		$PROGX $ARGS | sort -b > $LOGDIR/log.$PROGX.$TESTN.sorted
+		$PROGX $ARGS | sort -b > $LOGDIR/log201904726.$PROGX.$TESTN.sorted
 
-		diff -b $LOGDIR/log.$PROGX.$TESTN.sorted $LOGDIR/log.$PROGCH.$TESTN.sorted
+		diff -b $LOGDIR/log201904726.$PROGX.$TESTN.sorted $LOGDIR/log201904726.$PROGCH.$TESTN.sorted
 	done
 fi
 
