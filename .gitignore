@@ -1,9 +1,4 @@
 .vscode/
-*/test
-*/xmod
-*/xmodtest
-/xmodtest/**
-*/xmod.o
-/xmod.o
-/symFolder/**
-/infer-out/**
+**/xmod
+**/*.o
+**/infer-out/*
