@@ -73,11 +73,6 @@ void write_to_log(unsigned int event, char* info) {
     }
 }
 
-
-/**
- * Gets the time that the process runned until the moment this function is called
- @return double with the time 
-*/
 long int get_running_time() {
     clock_gettime(CLOCK_REALTIME, &end_time);
     long int delta_ms = end_time.tv_sec * 1000 + end_time.tv_nsec/(pow(10, 6));   // time in ms
