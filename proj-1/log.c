@@ -78,4 +78,3 @@ long int get_running_time() {
     long int delta_ms = end_time.tv_sec * 1000 + end_time.tv_nsec/(pow(10, 6));   // time in ms
     return delta_ms;
 }
-

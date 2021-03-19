@@ -116,5 +116,3 @@ __mode_t parse_perms(char* perms, char* filename, int verbosity) {
     free(copy);
     return ret;
 }
-
-

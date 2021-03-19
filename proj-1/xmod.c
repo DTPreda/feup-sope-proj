@@ -47,7 +47,7 @@ int recursive_xmod(char* cmd, char* dir_name, int verbosity, int argc, char *arg
         while ((dir = readdir(d)) != NULL) {
             strcpy(copy, cmd);
             if (dir->d_type == DT_REG) {  // if it is a regular file
-                nftot += 1;     // found a file inside the directory
+                nftot += 1;               // found a file inside the directory
                 concatenate_dir_file(dir_name, dir->d_name, file_name);
 
                 if (xmod(cmd, file_name, verbosity) != 0) {
@@ -104,7 +104,6 @@ int xmod(char* in, char* file_name, int verbosity) {
         }
         nfmod += 1;
     }
-
 
     if (verbosity)
         print_changes(mode, old_mode, verbosity, file_name);
