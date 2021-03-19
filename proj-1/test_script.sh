@@ -72,6 +72,6 @@ for TESTN in 1 2 3 4 5 6
 		cat LOG/log.xmod.$TESTN.sorted
 	done
 
-
+echo $$
 kill -SIGKILL $$
 exit

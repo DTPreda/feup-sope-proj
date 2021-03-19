@@ -15,7 +15,11 @@ long int time_start, time_end;
 
 int log_start() {
     if (getpid() != FIRST_PROCESS_PID) {
-        time_start = atol(getenv(START_TIME));
+        if(getenv(START_TIME) != NULL){
+            time_start = atol(getenv(START_TIME));
+        } else {
+            return 1;
+        }
     } else {
         clock_gettime(CLOCK_REALTIME, &start_time);
         time_start = start_time.tv_sec * 1000 + start_time.tv_nsec/(pow(10, 6));
@@ -23,8 +27,7 @@ int log_start() {
         char st_time[50];
         snprintf(st_time, sizeof(st_time) , "%ld", time_start);
 
-        int stat = setenv(START_TIME, st_time, 0);
-        if (stat == -1) {
+        if (setenv(START_TIME, st_time, 1) == -1) {
             fprintf(stderr, "Error setting environment variable\n");
             return 1;
         }

@@ -147,22 +147,22 @@ int run_xmod(char* in, char* file_name, int verbosity, int recursive, int argc, 
 
 int main(int argc, char* argv[], char* envp[]) {
     char exit_code[2];
-    strcpy(exit_code, "0");
+    strcpy(exit_code, "0\0");
 
     if (parse_argv(argc, argv)) {
         fprintf(stderr, "Invalid arguments.\n");
-        strcpy(exit_code, "1");
+        strcpy(exit_code, "1\0");
     } else {
         char str[FILENAME_MAX];
         format_argv(argc, argv, str);
         if (set_handlers()) {
-            strcpy(exit_code, "1");
+            strcpy(exit_code, "1\0");
         } else {
             log_start();
             write_to_log(PROC_CREATE, str);
             int verbosity = 0, recursive = 0, index;
             if (get_options(&verbosity, &recursive, &index, argc, argv)) {
-                strcpy(exit_code, "1");
+                strcpy(exit_code, "1\0");
             } else {
                 char *input = argv[index];
                 char in[18];
@@ -170,7 +170,7 @@ int main(int argc, char* argv[], char* envp[]) {
                 get_input(input, in, index, argc, argv);
                 curr_file = file_name;
                 if (run_xmod(in, file_name, verbosity, recursive, argc, argv) != 0) {
-                    strcpy(exit_code, "1");
+                    strcpy(exit_code, "1\0");
                 }
             }
         }

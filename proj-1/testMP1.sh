@@ -65,4 +65,5 @@ fi
 rm -rf $DIR
 cp -rp --remove-destination $LOGDIR/backupMP1/`basename $DIR` $DIR
 
+echo $$
 exit
