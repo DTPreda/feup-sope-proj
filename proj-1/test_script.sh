@@ -6,7 +6,7 @@
 # V.3 corrects a NOT SO SMALL problem: in the previous version, xmod run over the $DIR changed by chmod!
 #
 set -m
-LOGDIR="/tmp"
+LOGDIR="/home/dtpreda/MIEIC/SOPE/feup-sope-proj/proj-1"
 PROGCH="chmod"
 
 case $# in
@@ -16,12 +16,13 @@ esac
 
 # backup copy
 mkdir $LOGDIR/backupMP1
+mkdir $LOGDIR/LOG
 rm -rf $LOGDIR/backupMP1/`basename $DIR`
 cp -rp --remove-destination $DIR $LOGDIR/backupMP1/`basename $DIR`
 
 # enforce some useful permissions
-$PROGCH 444 $FILE
-$PROGCH 755 $DIR
+#$PROGCH 444 $FILE
+#$PROGCH 755 $DIR
 
 # save initial permissions of $FILE $DIR (can be useful...)
 TESTN=0
@@ -36,13 +37,13 @@ ARGS3="-c g=x $FILE"
 ARGS4="-c u+r $DIR"
 ARGS5="-v u+r $FILE"
 ### ARGS6="-R 777 $DIR"	# Really, chmod also accepts octals w/o leading '0'
-ARGS6="-R 0777 $DIR"
+ARGS6="-vR 0777 $DIR"
 
 # sequence of tests for CHMOD
 for TESTN in 1 2 3 4 5 6
 do
 	eval ARGS=\${ARGS$TESTN}
-	$PROGCH $ARGS | sort -b > $LOGDIR/log.$PROGCH.$TESTN.sorted
+	$PROGCH $ARGS | sort -b > $LOGDIR/LOG/log.$PROGCH.$TESTN.sorted
 done
 
 # reset original dir/files
@@ -55,9 +56,9 @@ then
 	for TESTN in 1 2 3 4 5 6
 	do
 		eval ARGS=\${ARGS$TESTN}
-		$PROGX $ARGS | sort -b > $LOGDIR/log.$PROGX.$TESTN.sorted
+		$PROGX $ARGS | sort -b > $LOGDIR/LOG/log.$PROGX.$TESTN.sorted
 
-		diff -b $LOGDIR/log.$PROGX.$TESTN.sorted $LOGDIR/log.$PROGCH.$TESTN.sorted
+		diff -b $LOGDIR/LOG/log.$PROGX.$TESTN.sorted $LOGDIR/LOG/log.$PROGCH.$TESTN.sorted
 	done
 fi
 
@@ -65,4 +66,11 @@ fi
 rm -rf $DIR
 cp -rp --remove-destination $LOGDIR/backupMP1/`basename $DIR` $DIR
 
-exit
+
+for TESTN in 1 2 3 4 5 6
+	do
+		cat LOG/log.xmod.$TESTN.sorted
+	done
+
+
+kill -SIGKILL $$
