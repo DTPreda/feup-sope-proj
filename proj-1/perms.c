@@ -9,6 +9,7 @@ __mode_t get_perms(unsigned int r, unsigned int w, unsigned int x, char op, char
 
     unsigned int modes[3] = {r, w, x};
     unsigned int targets[3] = {0, 0, 0};
+
     if (target == 'a') {
         targets[0] = 1;
         targets[1] = 1;
@@ -19,14 +20,12 @@ __mode_t get_perms(unsigned int r, unsigned int w, unsigned int x, char op, char
         if (target == 'o') targets[0] = 1;
     }
     if (op == '+') {
-        // ret = permissões do ficheiro;
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
                 ret |= modes[i]*targets[j] << ((2 - i) + 3*j);
             }
         }
     } else if (op == '-') {
-        // ret = permissões do ficheiro
         struct stat stb;
         if (stat(filename, &stb) != 0) {  // get permissions
             perror("Stat");
@@ -54,7 +53,7 @@ __mode_t parse_perms(char* perms, char* filename, int verbosity) {
     char* copy = (char *) malloc(strlen(perms) * sizeof(char) + 1) ;
     strcpy(copy, perms);
     char* input = strtok(copy, " ");
-    for ( ; input != NULL; ) {
+    for ( ; input != NULL ; ) {
         size_t len = strlen(input);
         char target = 'a';
         char mode;
