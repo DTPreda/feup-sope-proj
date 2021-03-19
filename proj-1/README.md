@@ -1,6 +1,6 @@
 # Xmod: A utility to change file mode permissions
 
-Xmod is a program developed as a subset of chmod, the official GNU utility to change the permissions of a file or set of files, in regards to the current user, his group and other users.
+Xmod is a program developed as a subset of chmod, the official GNU utility to change the permissions of a file or set of files, in regard to the current user, his group and other users.
 
 ## Compilation
 
