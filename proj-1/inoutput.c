@@ -60,7 +60,7 @@ int parse_perm_arg(char* arg) {
     enum state_machine sm = TARGET;
     for (int i = 0; i < strlen(arg); i++) {
         if (sm == TARGET) {
-            if (arg[i] == 'a' || arg[i] == 'g' || arg[i] == 'u') {
+            if (arg[i] == 'a' || arg[i] == 'g' || arg[i] == 'u' || arg[i] = 'o') {
                 sm = OPERATOR;
                 continue;
             }
