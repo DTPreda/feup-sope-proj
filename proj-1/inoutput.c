@@ -23,7 +23,7 @@ int parse_argv(int argc, char* argv[]) {
     if (argc <= 2) {
         return 1;
     }
-    
+
     if (access(argv[argc - 1], F_OK)) {
         perror("access");
         return 1;
@@ -105,6 +105,7 @@ int parse_perm_arg(char* arg) {
     return 0;
 }
 
+
 void format_octal(char *octal, char* in) {
     strcpy(in, "u=");
     for (int i = 1; i < strlen(octal); i++) {
@@ -144,6 +145,7 @@ void format_octal(char *octal, char* in) {
         }
     }
 }
+
 
 int get_options(int* verbose, int* recursive, int* index, int argc, char* argv[]) {
     int option;
@@ -208,9 +210,6 @@ void print_changes(__mode_t new_mode, __mode_t old_mode, int verbosity, char* fi
 }
 
 
-/**
- * Converts the mode of permissions to format rwxrwxrwx
- */
 void str_mode(__mode_t mode, char * buf) {
   const char chars[] = "rwxrwxrwx";
   for (size_t i = 0; i < 9; i++) {
@@ -219,15 +218,14 @@ void str_mode(__mode_t mode, char * buf) {
   buf[9] = '\0';
 }
 
-int determine_executable_path(char* argv){
-    //printf("%s\n", argv);
-    if(argv[0] == '/'){
+int determine_executable_path(char* argv) {
+    if (argv[0] == '/') {
         strcpy(executable_path, argv);
         return 0;
     }
 
-    for(int i = 0; i < strlen(argv); i++){
-        if(argv[i] == '/'){
+    for (int i = 0; i < strlen(argv); i++) {
+        if (argv[i] == '/') {
             char buff[FILENAME_MAX];
             getcwd(buff, FILENAME_MAX);
             strcpy(executable_path, buff);
@@ -240,13 +238,11 @@ int determine_executable_path(char* argv){
     char path[FILENAME_MAX];
     strcpy(path, getenv("PATH"));
 
-    //printf("%s\n", path);
-
     char* input = strtok(path, ":");
     char tmp[FILENAME_MAX];
     for ( ; input != NULL; ) {
         strcpy(tmp, input); strcat(tmp, "/xmod");
-        if(access(tmp, F_OK) == 0){
+        if (access(tmp, F_OK) == 0) {
             strcpy(executable_path, tmp);
             return 0;
         }
