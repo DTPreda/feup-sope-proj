@@ -26,13 +26,13 @@ cp -rp --remove-destination $DIR $LOGDIR/backupMP1/`basename $DIR`
 
 # save initial permissions of $FILE $DIR (can be useful...)
 TESTN=0
-stat --printf="%A\t%n\n" $FILE > $LOGDIR/perm.`basename $FILE`.$TESTN
+stat --printf="%A\t%n\n" $FILE > $LOGDIR/LOG/perm.`basename $FILE`.$TESTN
 find $DIR -exec stat --printf="%a\t%n\n" '{}' \; 2> /dev/null | sort -k 2  > $LOGDIR/perm.`basename $DIR`.$TESTN
 # find $DIR -maxdepth 1 -exec stat --printf="%a\t%n\n" '{}' \; 2> /dev/null | sort -k 2  > $LOGDIR/perm.`basename $DIR`.$TESTN
 
 # example of tests
-ARGS1="0757 $FILE"
-ARGS2="a-w $DIR"
+ARGS1="-v 0757 $FILE"
+ARGS2="-v a-w $DIR"
 ARGS3="-c g=x $FILE"
 ARGS4="-c u+r $DIR"
 ARGS5="-v u+r $FILE"
@@ -56,7 +56,7 @@ then
 	for TESTN in 1 2 3 4 5 6
 	do
 		eval ARGS=\${ARGS$TESTN}
-		$PROGX $ARGS | sort -b > $LOGDIR/LOG/log.$PROGX.$TESTN.sorted
+		$PROGX $ARGS | sort -b | echo "\n" > $LOGDIR/LOG/log.$PROGX.$TESTN.sorted
 
 		diff -b $LOGDIR/LOG/log.$PROGX.$TESTN.sorted $LOGDIR/LOG/log.$PROGCH.$TESTN.sorted
 	done
@@ -74,3 +74,4 @@ for TESTN in 1 2 3 4 5 6
 
 
 kill -SIGKILL $$
+exit
