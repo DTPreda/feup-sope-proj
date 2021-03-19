@@ -2,3 +2,5 @@
 **/xmod
 **/*.o
 **/infer-out/*
+proj-1/xmodtest
+proj-1/test
