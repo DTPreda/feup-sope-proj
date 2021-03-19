@@ -12,7 +12,6 @@
 struct timespec start_time, end_time;
 long int time_start, time_end;
 
-
 int log_start() {
     if (getpid() != FIRST_PROCESS_PID) {
         if(getenv(START_TIME) != NULL){
@@ -24,7 +23,7 @@ int log_start() {
         clock_gettime(CLOCK_REALTIME, &start_time);
         time_start = start_time.tv_sec * 1000 + start_time.tv_nsec/(pow(10, 6));
 
-        char st_time[50];
+        char st_time[FILENAME_MAX];
         snprintf(st_time, sizeof(st_time) , "%ld", time_start);
 
         if (setenv(START_TIME, st_time, 1) == -1) {
