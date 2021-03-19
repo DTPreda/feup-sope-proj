@@ -12,10 +12,7 @@
 struct timespec start_time, end_time;
 long int time_start, time_end;
 
-/**
- * Setup of environment variables to store the starting time of program
- * and eldest pid
- */
+
 int log_start() {
     if (getpid() != FIRST_PROCESS_PID) {  // if the process is not the first one to be created => START_TIME will already have been created
         time_start = atol(getenv(START_TIME));
