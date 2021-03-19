@@ -1,10 +1,11 @@
 #ifndef _INOUTPUT_H_
 #define _INOUTPUT_H_
 
+
 int parse_argv(int argc, char* argv[]);
 int parse_perm_arg_octal(char* arg);
-void format_argv(int argc, char *argv[], char* str);
 int parse_perm_arg(char* arg);
+void format_argv(int argc, char *argv[], char* str);
 void format_octal(char *octal, char* in);
 int get_options(int* verbose, int* recursive, int* index, int argc, char* argv[]);
 void get_input(char* input, char* in, char* file_name, int index, int argc, char* argv[]);

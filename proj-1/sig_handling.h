@@ -4,6 +4,8 @@
 /**
  * @brief Global Handler of signals, it writes into a file the information 
  * about the signal received
+ * 
+ * @param signo Number of the signal received, specified in <signal.h>
  */ 
 void sig_handler(int signo);
 
