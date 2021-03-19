@@ -16,7 +16,7 @@ extern struct timespec start_time, end_time;
 extern long int time_start, time_end;
 extern unsigned int nftot;
 extern unsigned int nfmod;
-extern char* curr_file;  // currently FILE/DIR passed to argv
+extern char* curr_file;  // current FILE/DIR passed to argv
 extern char executable_path[FILENAME_MAX];
 
 
@@ -24,7 +24,7 @@ extern char executable_path[FILENAME_MAX];
 void concatenate_dir_file(char* dir, char* file_name, char* ret) {
     strcpy(ret, "");
     strcat(ret, dir);
-    strcat(ret, "/");  // filename = dir_name/
+    strcat(ret, "/");
     strcat(ret, file_name);
 }
 
@@ -47,7 +47,7 @@ int recursive_xmod(char* cmd, char* dir_name, int verbosity, int argc, char *arg
         while ((dir = readdir(d)) != NULL) {
             strcpy(copy, cmd);
             if (dir->d_type == DT_REG) {  // if it is a regular file
-                nftot += 1;  // found a file inside the directory
+                nftot += 1;     // found a file inside the directory
                 concatenate_dir_file(dir_name, dir->d_name, file_name);
 
                 if (xmod(cmd, file_name, verbosity) != 0) {
@@ -65,7 +65,6 @@ int recursive_xmod(char* cmd, char* dir_name, int verbosity, int argc, char *arg
                     concatenate_dir_file(dir_name, dir->d_name, file_name);
 
                     argv[argc - 1] = file_name;
-                    //printf("%s\n", executable_path);
                     if (execv(executable_path, argv) == -1) {
                         argv[argc - 1] = dir_name;
                         perror("execv");
