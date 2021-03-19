@@ -18,59 +18,48 @@ char* curr_file;  // currently FILE/DIR passed to argv
  * about the signal received
  */ 
 void sig_handler(int signo) {
+    
+    char sig_received[15];
+    snprintf(sig_received, sizeof(sig_received), "%i", signo);
+    write_to_log(SIGNAL_RECV, sig_received);
+
     if (signo == SIGINT) {
-        char sig_received[15];
-        snprintf(sig_received, sizeof(sig_received), "SIGINT");
-        write_to_log(SIGNAL_RECV, sig_received);
 
         fprintf(stdout, "%i ; %s ; %i ; %i\n", getpid(), curr_file, nftot, nfmod);
-        // The eldest controls the signals
+        // First process sends signals to the rest of the group
         if (getpid() == FIRST_PROCESS_PID) {
-            sleep(0.25);
             int option;
             char msg1[15], msg2[15];
             snprintf(msg1, sizeof(msg1), "SIGUSR1 : %d", getpid());
             snprintf(msg2, sizeof(msg2), "SIGCONT : %d", getpid());
 
+            sleep(0.25);
             fprintf(stdout, "Would you wish to proceed? [Y/N]\n");
             while ( (option = getchar()) == '\n') {}
+
+            write_to_log(SIGNAL_SENT, msg2);
+            killpg(getpgrp(), SIGCONT);
+
             switch (option) {
                 case 'Y':
                 case 'y':
                     fprintf(stdout, "Resuming process \n");
-                    write_to_log(SIGNAL_SENT, msg2);
-                    killpg(getpgrp(), SIGCONT);
                     break;
                 case 'N':
                 case 'n':
-                    write_to_log(SIGNAL_SENT, msg2);
-                    killpg(getpgrp(), SIGCONT);
                     write_to_log(SIGNAL_SENT, msg1);
                     killpg(getpgrp(), SIGUSR1);
                     break;
                 default:
-                    write_to_log(SIGNAL_SENT, msg2);
-                    killpg(getpgrp(), SIGCONT);
                     fprintf(stdout, "Unknown option, aborting program\n");
                     write_to_log(SIGNAL_SENT, msg1);
                     killpg(getpgrp(), SIGUSR1);
                     break;
             }
-        } else {
-            char msg[15];
-            snprintf(msg, sizeof(msg), "SIGSTOP : %d", getpid());
-            write_to_log(SIGNAL_SENT, msg);
-            kill(getpid(), SIGSTOP);
-
-            char sig_received[15];
-            snprintf(sig_received, sizeof(sig_received), "SIGCONT");
-            write_to_log(SIGNAL_RECV, sig_received);
+        } else {    
+            pause();
         }
     } else if (signo == SIGUSR1) {
-        char sig_received[15];
-        snprintf(sig_received, sizeof(sig_received), "SIGUSR1");
-        write_to_log(SIGNAL_RECV, sig_received);
-
         if (getpid() == FIRST_PROCESS_PID) wait(0);
         write_to_log(PROC_EXIT, "1");
         exit(1);
@@ -80,14 +69,15 @@ void sig_handler(int signo) {
 
 
 int set_handlers() {
-    if (signal(SIGINT, sig_handler) == SIG_ERR) {
-        perror("signal");
-        return 1;
-    }
 
-    if (signal(SIGUSR1, sig_handler) == SIG_ERR) {
-        perror("signal");
-        return 1;
+    for(int i = 1; i < 32; i++){
+        if(i != SIGKILL && i != SIGSTOP){
+            if (signal(i, sig_handler) == SIG_ERR) {
+                fprintf(stdout, "%i\n", i);
+                perror("signal");
+                return 1;
+            }
+        }
     }
 
     return 0;

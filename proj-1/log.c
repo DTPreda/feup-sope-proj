@@ -48,7 +48,7 @@ void write_to_log(unsigned int event, char* info) {
 
         log_file = fopen(log_file_name, "a");
 
-        char str[100];
+        char str[FILENAME_MAX];
         switch (event) {
         case PROC_CREATE:
             snprintf(str, sizeof(str), "%ld ; %d ; PROC_CREATE ;%s\n", get_running_time() - time_start, getpid(), info);
