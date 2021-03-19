@@ -10,7 +10,7 @@
 
 unsigned int nftot = 0;
 unsigned int nfmod = 0;
-char* curr_file;  // currently FILE/DIR passed to argv
+char* curr_file;  // current FILE/DIR passed to argv
 
 void sig_handler(int signo) {
     char sig_received[15];
