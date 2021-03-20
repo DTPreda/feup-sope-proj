@@ -20,9 +20,11 @@
  * 
  * @param filename Name of the file whose permissions we wish to change.
  * 
+ * @param ret Current permissions variable, to be modified
+ * 
  * @return New mode bits of the file, regarding a specific change (only processes one change at a time).
  */ 
-__mode_t get_perms(unsigned int r, unsigned int w, unsigned int x, char op, char target, char* filename);
+__mode_t get_perms(unsigned int r, unsigned int w, unsigned int x, char op, char target, char* filename, __mode_t ret);
 
 /**
  * @brief Converts the permissions given by the user to the respective mode bits,

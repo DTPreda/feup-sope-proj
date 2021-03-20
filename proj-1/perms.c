@@ -4,9 +4,7 @@
 #include <string.h>
 
 
-__mode_t get_perms(unsigned int r, unsigned int w, unsigned int x, char op, char target, char* filename) {
-    __mode_t ret = 0;
-
+__mode_t get_perms(unsigned int r, unsigned int w, unsigned int x, char op, char target, char* filename, __mode_t ret) {
     unsigned int modes[3] = {r, w, x};
     unsigned int targets[3] = {0, 0, 0};
 
@@ -26,12 +24,6 @@ __mode_t get_perms(unsigned int r, unsigned int w, unsigned int x, char op, char
             }
         }
     } else if (op == '-') {
-        struct stat stb;
-        if (stat(filename, &stb) != 0) {  // get permissions
-            perror("Stat");
-            return __UINT32_MAX__;
-        }
-        ret = stb.st_mode;
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
                 ret &= ~(modes[i]*targets[j] << (((2 - i) + 3*j)));
@@ -83,34 +75,33 @@ __mode_t parse_perms(char* perms, char* filename, int verbosity) {
                 mode = input[1];
                 break;
             case 'a':
-                mode = perms[1];
+                mode = input[1];
                 break;
             default:
-                mode = perms[0];
+                mode = input[1];
                 break;
         }
 
         __mode_t temp = 0, sec_temp = 0;
         if (mode == '+') {
-            temp = get_perms(read, write, execute, mode, target, filename);
+            temp = get_perms(read, write, execute, mode, target, filename, 0);
             if (temp == __UINT32_MAX__) return __UINT32_MAX__;
             ret |= temp;
         } else if (mode == '=') {
-            temp = get_perms(1, 1, 1, '+', target, filename);
+            temp = get_perms(1, 1, 1, '+', target, filename, 0);
             if (temp == __UINT32_MAX__) return __UINT32_MAX__;
 
-            sec_temp = get_perms(read, write, execute, '+', target, filename);
+            sec_temp = get_perms(read, write, execute, '+', target, filename, 0);
             if (sec_temp == __UINT32_MAX__) return __UINT32_MAX__;
 
             ret &= ~(temp);
             ret |= sec_temp;
         } else {
-            temp = get_perms(read, write, execute, mode, target, filename);
+            temp = get_perms(read, write, execute, mode, target, filename, ret);
             if (temp == __UINT32_MAX__) return __UINT32_MAX__;
 
             ret &= temp;
         }
-
         input = strtok(NULL, " ");
     }
     free(copy);
