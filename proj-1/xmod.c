@@ -65,7 +65,8 @@ int recursive_xmod(char* cmd, char* dir_name, int verbosity, int argc, char *arg
                     concatenate_dir_file(dir_name, dir->d_name, file_name);
 
                     argv[argc - 1] = file_name;
-                    if (execv(executable_path, argv) == -1) {
+                    extern char** __environ;
+                    if (execve(executable_path, argv, __environ) == -1) {
                         argv[argc - 1] = dir_name;
                         perror("execv");
                         return 1;
