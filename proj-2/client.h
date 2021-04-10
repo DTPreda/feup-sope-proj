@@ -12,4 +12,8 @@ typedef struct {
     int priority;
 } client_order;
 
+void make_request();
+void get_response();
+void *client_thread_func(void * argument);
+
 int parse_args(int argc, char* argv[]);
