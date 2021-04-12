@@ -4,16 +4,17 @@
 #include <string.h>
 #include <sys/stat.h>
 
-/**
- * Struct to store the information about a client thread (its id and priority of the task requested)
- */
+
 typedef struct {
-    int id;
-    int priority;
-} client_order;
+	int rid;	// request id
+	pid_t pid;	// process id
+	pthread_t tid;	// thread id
+	int tskload;	// task load
+	int tskres;	// task result
+} message;
 
 void make_request();
-void get_response();
+message get_response();
 void *client_thread_func(void * argument);
 
 int parse_args(int argc, char* argv[]);
