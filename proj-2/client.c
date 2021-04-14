@@ -21,13 +21,14 @@ void make_request(message msg) {
     pthread_mutex_lock(&access_public_pipe);        // Just one thread accessing the public pipe to register requests
     
     // Writing the task Client want Servidor to perform
-    int fd = open(public_pipe, O_WRONLY);
+    // fprintf(stdout, "%d\n", mkfifo(public_pipe, 0666));
+
+    int fd = open(public_pipe, O_WRONLY);  // WHY IS THIS BLOCKIIIING AND NOT OPENING PUBLIC PIPE
     if (fd < 0) {
         fprintf(stdout, "Could not open public_pipe\n");
     } else {
-        char message[40];
-        snprintf(message, 40, "%d %d %d %lu %d", msg.rid, msg.tskload, msg.pid, msg.tid, msg.tskres);
-        write(fd, message, 1 + strlen(message)); // waits...
+        // snprintf(message, 40, "%d %d %d %lu %d", msg.rid, msg.tskload, msg.pid, msg.tid, msg.tskres);
+        write(fd, &msg, sizeof(msg)); // waits...
     }
 
     close(fd);
@@ -42,46 +43,23 @@ void make_request(message msg) {
  */ 
 message get_response() {
     char private_pipe[50];
-    char receivedMessage[1024];
+    // char receivedMessage[1024];
     message response;
 
     snprintf(private_pipe, 50, "/tmp/%d.%lu", getpid(), (unsigned long) pthread_self());
-
-
+    fprintf(stdout, "Private Pipe: %s\n", private_pipe);
     // Writing the task Client want Servidor to perform
     int fd = open(private_pipe, O_RDONLY);
     if (fd < 0) {
         fprintf(stdout, "Could not open public_pipe\n");
     } else {
-        read(fd, receivedMessage, 1024);
+        read(fd, &response, sizeof(response));
     }
 
-    char * format;
-    char msg[1024];
-
-    format = strtok(receivedMessage, " ");
-    snprintf(msg, 1024, "%s", format);
-    response.rid = atoi(msg);	            // request id
-
-    format = strtok(NULL, " ");
-    snprintf(msg, 1024, "%s", format);
-	response.tskload = atoi(msg);	        // task load
-
-    format = strtok(NULL, " ");
-    snprintf(msg, 1024, "%s", format);
-	response.pid = atoi(msg);	            // process id
-
-    format = strtok(NULL, " ");
-    snprintf(msg, 1024, "%s", format);
-    char *ptr;
-	response.tid = strtol(msg, &ptr, 10);	// thread id
-
-    format = strtok(NULL, " ");
-    snprintf(msg, 1024, "%s", format);
-	response.tskres = atoi(msg);	        // task result
-
     close(fd);
-
+    
+    // DEBUG
+    fprintf(stdout, "%d %d %lu %d %d\n", response.rid, response.pid, response.tid, response.tskload, response.tskres);
 
     /* PROCESS MESSAGE, WRITE THAT RECEIVED THE RETURN OF THE REQUEST, ETC */
     return response;
@@ -102,7 +80,7 @@ void *client_thread_func(void * argument) {
     order.tid = pthread_self();
     order.tskload = num;
     order.tskres = DEFAULT_CLIENT_RESULT;
-    
+
     pthread_mutex_lock(&control_id);
     order.rid = global_id;
     global_id++;
@@ -114,10 +92,10 @@ void *client_thread_func(void * argument) {
         fprintf(stderr, "mkfifo()");
     }     // private channel
 
+    fprintf(stdout, "%d %d %lu %d %d\n", order.rid, order.pid, order.tid, order.tskload, order.tskres);
     make_request(order);
 
-    message response = get_response();
-    fprintf(stdout, "%d %d %d %lu %d", response.rid, response.tskload, response.pid, response.tid, response.tskres);
+    message response = get_response();    
     return(NULL);
 }
 
