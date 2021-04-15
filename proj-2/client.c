@@ -1,14 +1,4 @@
-#include "client.h"
-#include <fcntl.h>
-#include <time.h>
-#include <sys/wait.h>
-#include <pthread.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <math.h>
-
-#define DEFAULT_CLIENT_RESULT -1
-#define NTHREADS 10
+#include "client.h" 
 
 time_t startTime;
 char* public_pipe;
@@ -30,6 +20,7 @@ void make_request(Message msg) {
         // SERVIDOR FECHOU A FIFO, GUARDAR INFORMACAO
         fprintf(stdout, "Could not open public_pipe\n");
     } else {
+        register_op(msg, IWANT);
         write(fd, &msg, sizeof(msg)); // waits...
     }
 
@@ -55,6 +46,7 @@ Message get_response() {
         fprintf(stdout, "Could not open public_pipe\n");
     } else {
         read(fd, &response, sizeof(response));
+        register_op(response, GOTRS);
     }
 
     close(fd);
@@ -96,8 +88,12 @@ void *client_thread_func(void * argument) {
 
     Message response = get_response();   
     
+    if(response.tskres == -1) {
+        register_op(response, CLOSD);
+        // terminate the program
+    }
     // DEBUG
-    fprintf(stdout, "Message:%d %d %d %lu %d\n", response.rid, response.tskload, response.pid, response.tid, response.tskres);
+    //fprintf(stdout, "Message:%d %d %d %lu %d\n", response.rid, response.tskload, response.pid, response.tid, response.tskres);
     
     if (remove(private_fifo) != 0){
         fprintf(stderr, "remove(private_fifo)\n");
