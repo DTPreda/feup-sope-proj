@@ -6,6 +6,7 @@
 #include <stdio.h>
 
 #define DEFAULT_CLIENT_RESULT -1
+#define NTHREADS 10
 
 char* public_pipe;
 static int global_id = 0;
@@ -17,7 +18,7 @@ pthread_mutex_t control_id;
  * Make a request to Servidor
  * Probably need to pass the struct request throw argument and store it in public_pipe (putting it in public_pipe is making a request)
  */ 
-void make_request(message msg) {
+void make_request(Message msg) {
     pthread_mutex_lock(&access_public_pipe);        // Just one thread accessing the public pipe to register requests
     
     // Writing the task Client want Servidor to perform
@@ -31,7 +32,7 @@ void make_request(message msg) {
     /*
     message response;
     read(fd, &response, sizeof(response));
-    fprintf(stdout, "%d %d %d %lu %d\n", response.rid, response.priority, response.pid, response.tid, response.res);
+    fprintf(stdout, "%d %d %d %lu %d\n", response.rid, response.tskload, response.pid, response.tid, response.tskres);
     */
     close(fd);
 
@@ -43,25 +44,24 @@ void make_request(message msg) {
  * Get response from a request. 
  * Probably need to return a struct request, read from the private pipe (idk how to read it from pipe, how does the output of the request come?)
  */ 
-message get_response() {
+Message get_response() {
     char private_pipe[50];
     // char receivedMessage[1024];
-    message response;
+    Message response;
 
     snprintf(private_pipe, 50, "/tmp/%d.%lu", getpid(), (unsigned long) pthread_self());
-    fprintf(stdout, "Private Pipe: %s\n", private_pipe);
+
     // Writing the task Client want Servidor to perform
     int fd = open(private_pipe, O_RDONLY);
     if (fd < 0) {
         fprintf(stdout, "Could not open public_pipe\n");
     } else {
-        fprintf(stdout, "oioi\n");
         read(fd, &response, sizeof(response));
     }
 
     close(fd);
     
-    /* PROCESS MESSAGE, WRITE THAT RECEIVED THE RETURN OF THE REQUEST, ETC */
+    /* PROCESS Message, WRITE THAT RECEIVED THE RETURN OF THE REQUEST, ETC */
     return response;
 }
 
@@ -69,17 +69,17 @@ message get_response() {
  * Func to create client threads. It creates a private fifo to communicate with Servidor
  */
 void *client_thread_func(void * argument) {
+    
     // generate number between 1 and 9
     int upper = 9, lower = 1;
-    unsigned int seed = time(0);
-    srand(seed);
-    int num = (rand_r(&seed) % (upper - lower + 1)) + lower;
+    srand((unsigned) pthread_self());
+    int num = (rand() % (upper - lower + 1)) + lower;
 
-    message order;
-    order.priority = num;
+    Message order;
+    order.tskload = num;
     order.pid = getpid();
     order.tid = pthread_self();
-    order.res = DEFAULT_CLIENT_RESULT;
+    order.tskres = DEFAULT_CLIENT_RESULT;
 
     pthread_mutex_lock(&control_id);
     order.rid = global_id;
@@ -92,15 +92,19 @@ void *client_thread_func(void * argument) {
         fprintf(stderr, "mkfifo()");
     }     // private channel
 
-    fprintf(stdout, "%d %d %d %lu %d\n", order.rid, order.priority, order.pid, order.tid, order.res);
+    fprintf(stdout, "%d %d %d %lu %d\n", order.rid, order.tskload, order.pid, order.tid, order.tskres);
 
     make_request(order);
 
-    message response = get_response();   
+    Message response = get_response();   
     
     // DEBUG
-    fprintf(stdout, "%d %d %d %lu %d\n", response.rid, response.priority, response.pid, response.tid, response.res);
- 
+    fprintf(stdout, "Message:%d %d %d %lu %d\n", response.rid, response.tskload, response.pid, response.tid, response.tskres);
+    
+    if (remove(private_fifo) != 0){
+        fprintf(stderr, "remove(private_fifo)\n");
+    } 
+    
     return(NULL);
 }
 
@@ -120,10 +124,14 @@ int main(int argc, char* argv[]) {
     }*/
 
 	pthread_t *ptid;
-    ptid = (pthread_t *) malloc(2 * sizeof(pthread_t));
+    ptid = (pthread_t *) malloc(NTHREADS * sizeof(pthread_t));
     public_pipe = argv[3];
-
-    pthread_create(&ptid[0], NULL, client_thread_func, NULL);
-    pthread_join(ptid[0],NULL);
+    
+    for (int i = 0; i < NTHREADS; i++){
+        pthread_create(&ptid[i], NULL, client_thread_func, NULL);
+    }
+    for (int i = 0; i < NTHREADS; i++){
+        pthread_join(ptid[i],NULL);
+    }
     return 0;
 }
