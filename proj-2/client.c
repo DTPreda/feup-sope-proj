@@ -21,16 +21,18 @@ void make_request(message msg) {
     pthread_mutex_lock(&access_public_pipe);        // Just one thread accessing the public pipe to register requests
     
     // Writing the task Client want Servidor to perform
-    // fprintf(stdout, "%d\n", mkfifo(public_pipe, 0666));
-
     int fd = open(public_pipe, O_WRONLY);  // WHY IS THIS BLOCKIIIING AND NOT OPENING PUBLIC PIPE
     if (fd < 0) {
         fprintf(stdout, "Could not open public_pipe\n");
     } else {
-        // snprintf(message, 40, "%d %d %d %lu %d", msg.rid, msg.tskload, msg.pid, msg.tid, msg.tskres);
         write(fd, &msg, sizeof(msg)); // waits...
     }
 
+    /*
+    message response;
+    read(fd, &response, sizeof(response));
+    fprintf(stdout, "%d %d %d %lu %d\n", response.rid, response.priority, response.pid, response.tid, response.res);
+    */
     close(fd);
 
     /* PROCESS MESSAGE, WRITE THAT SENT A REQUEST, ETC */
@@ -53,14 +55,12 @@ message get_response() {
     if (fd < 0) {
         fprintf(stdout, "Could not open public_pipe\n");
     } else {
+        fprintf(stdout, "oioi\n");
         read(fd, &response, sizeof(response));
     }
 
     close(fd);
     
-    // DEBUG
-    fprintf(stdout, "%d %d %lu %d %d\n", response.rid, response.pid, response.tid, response.tskload, response.tskres);
-
     /* PROCESS MESSAGE, WRITE THAT RECEIVED THE RETURN OF THE REQUEST, ETC */
     return response;
 }
@@ -76,10 +76,10 @@ void *client_thread_func(void * argument) {
     int num = (rand_r(&seed) % (upper - lower + 1)) + lower;
 
     message order;
+    order.priority = num;
     order.pid = getpid();
     order.tid = pthread_self();
-    order.tskload = num;
-    order.tskres = DEFAULT_CLIENT_RESULT;
+    order.res = DEFAULT_CLIENT_RESULT;
 
     pthread_mutex_lock(&control_id);
     order.rid = global_id;
@@ -92,10 +92,15 @@ void *client_thread_func(void * argument) {
         fprintf(stderr, "mkfifo()");
     }     // private channel
 
-    fprintf(stdout, "%d %d %lu %d %d\n", order.rid, order.pid, order.tid, order.tskload, order.tskres);
+    fprintf(stdout, "%d %d %d %lu %d\n", order.rid, order.priority, order.pid, order.tid, order.res);
+
     make_request(order);
 
-    message response = get_response();    
+    message response = get_response();   
+    
+    // DEBUG
+    fprintf(stdout, "%d %d %d %lu %d\n", response.rid, response.priority, response.pid, response.tid, response.res);
+ 
     return(NULL);
 }
 
