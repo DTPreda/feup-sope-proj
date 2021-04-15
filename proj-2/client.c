@@ -1,17 +1,20 @@
 #include "client.h"
 #include <fcntl.h>
 #include <time.h>
+#include <sys/wait.h>
 #include <pthread.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <math.h>
 
 #define DEFAULT_CLIENT_RESULT -1
 #define NTHREADS 10
 
+time_t startTime;
 char* public_pipe;
 static int global_id = 0;
-pthread_mutex_t access_public_pipe;
-pthread_mutex_t control_id;
+pthread_mutex_t access_public_pipe = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t control_id = PTHREAD_MUTEX_INITIALIZER;
 
 
 /**
@@ -19,21 +22,17 @@ pthread_mutex_t control_id;
  * Probably need to pass the struct request throw argument and store it in public_pipe (putting it in public_pipe is making a request)
  */ 
 void make_request(Message msg) {
-    pthread_mutex_lock(&access_public_pipe);        // Just one thread accessing the public pipe to register requests
+    pthread_mutex_lock(&access_public_pipe);        
     
     // Writing the task Client want Servidor to perform
-    int fd = open(public_pipe, O_WRONLY);  // WHY IS THIS BLOCKIIIING AND NOT OPENING PUBLIC PIPE
+    int fd = open(public_pipe, O_WRONLY);  
     if (fd < 0) {
+        // SERVIDOR FECHOU A FIFO, GUARDAR INFORMACAO
         fprintf(stdout, "Could not open public_pipe\n");
     } else {
         write(fd, &msg, sizeof(msg)); // waits...
     }
 
-    /*
-    message response;
-    read(fd, &response, sizeof(response));
-    fprintf(stdout, "%d %d %d %lu %d\n", response.rid, response.tskload, response.pid, response.tid, response.tskres);
-    */
     close(fd);
 
     /* PROCESS MESSAGE, WRITE THAT SENT A REQUEST, ETC */
@@ -46,7 +45,6 @@ void make_request(Message msg) {
  */ 
 Message get_response() {
     char private_pipe[50];
-    // char receivedMessage[1024];
     Message response;
 
     snprintf(private_pipe, 50, "/tmp/%d.%lu", getpid(), (unsigned long) pthread_self());
@@ -108,30 +106,59 @@ void *client_thread_func(void * argument) {
     return(NULL);
 }
 
-int parse_args(int argc, char* argv[]) {
+int parse_args(int argc, char* argv[], int *inputTime) {
     if (argc != 4) return 1;
     if (strncmp(argv[1], "-t", 2) != 0) return 1;
-    if (argv[2] <= 0) return 1;
+
+    if (argv[2] <= 0) {
+        return 1;
+    } else {
+        *inputTime = atoi(argv[2]);
+    }
+
     if (mkfifo(argv[3], 0666) < 0) return 1;     // public channel
     return 0;
 }
 
 int main(int argc, char* argv[]) {
-    parse_args(argc, argv);
+    int inputTime;
+    parse_args(argc, argv, &inputTime);
     /*if (parse_args(argc, argv) != 0) {
         fprintf(stderr, "Invalid arguments.\n");
         return 1;
     }*/
 
-	pthread_t *ptid;
-    ptid = (pthread_t *) malloc(NTHREADS * sizeof(pthread_t));
+    time(&startTime);
+    
+    srand((unsigned) startTime);
+    int upper = 9, lower = 1;
+    int creationSleep = (rand() % (upper - lower + 1)) + lower;
+
+    // time = 5, num = 1, max 50 threads (gave 10 + 1 to make sure it doesnt pass it)
+    int maxNThreads = (inputTime / creationSleep) * (10 + 1);      
+	
+    pthread_t *ptid;
+    ptid = (pthread_t *) malloc(maxNThreads * sizeof(pthread_t));
     public_pipe = argv[3];
     
-    for (int i = 0; i < NTHREADS; i++){
-        pthread_create(&ptid[i], NULL, client_thread_func, NULL);
+    fprintf(stdout, "NUM: %d\n", creationSleep);
+    // generate number between 1 and 9
+
+    int numThreads = 0;
+    for (; ; numThreads++){
+        time_t currTime;
+        time(&currTime);
+        usleep(creationSleep*pow(10, 5));
+
+        if ((unsigned) (currTime - startTime) >= inputTime) 
+            break;
+        
+        pthread_create(&ptid[numThreads], NULL, client_thread_func, NULL);
     }
-    for (int i = 0; i < NTHREADS; i++){
+
+    for (int i = 0; i < numThreads; i++){
         pthread_join(ptid[i],NULL);
     }
+
     return 0;
 }
