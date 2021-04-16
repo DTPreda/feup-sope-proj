@@ -46,20 +46,27 @@ void read_message(int fd, Message* message){
     FD_ZERO(&rfds);
     FD_SET(fd, &rfds);
 
-    tv.tv_sec = get_remaining_time();
-    tv.tv_usec = 0;
+    time_t remaining_time = get_remaining_time();
 
-    int ret = select(fd + 1, &rfds, NULL, NULL, &tv);
-
-    if(ret > 0){
-        // this mean one or more file descriptor has been written to
-        read(fd, message, sizeof(*message));
-        register_op(*message, GOTRS);
-    } else if (ret == 0) {   
-        // select timed out
+    if (remaining_time == 0) {
         register_op(*message, GAVUP);
     } else {
-        perror("select");
+        tv.tv_sec = remaining_time;
+        tv.tv_usec = 0;
+
+        int ret = select(fd + 1, &rfds, NULL, NULL, &tv);
+
+        if (ret > 0) {
+            // this mean one or more file descriptor has been written to
+            read(fd, message, sizeof(*message));
+            register_op(*message, GOTRS);
+        } else if (ret == 0) {   
+            // select timed out
+            register_op(*message, GAVUP);
+        } else {
+            perror("select");
+        }
+
     }
 }
 
@@ -76,7 +83,7 @@ Message get_response() {
     // Writing the task Client want Servidor to perform
     int fd = open(private_pipe, O_RDONLY);
     if (fd < 0) {
-        fprintf(stdout, "Could not open public_pipe\n");
+        fprintf(stdout, "Could not open private_pipe\n");
     } else {
         read_message(fd, &response);
     }
@@ -165,11 +172,9 @@ int main(int argc, char* argv[]) {
     
     int numThreads = 0;
     for (; ; numThreads++){
-        time_t currTime;
-        time(&currTime);
         usleep(creationSleep*pow(10, 5));       // this is 0.creationSleep seconds
 
-        if ((unsigned) (currTime - startTime) >= inputTime) 
+        if (get_remaining_time() == 0) 
             break;
         
         pthread_create(&ptid[numThreads], NULL, client_thread_func, NULL);
