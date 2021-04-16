@@ -1,5 +1,6 @@
 #include "client.h" 
 
+int inputTime;
 time_t startTime;
 char* public_pipe;
 static int global_id = 0;
@@ -30,6 +31,38 @@ void make_request(Message msg) {
     pthread_mutex_unlock(&access_public_pipe);
 }
 
+time_t get_remaining_time(){
+    time_t current_time = time(NULL);
+
+    time_t ret = startTime + inputTime - current_time;
+    if(ret < 0) return 0;
+    return ret;
+}
+
+void read_message(int fd, Message* message){
+    fd_set rfds;
+    struct timeval tv;
+
+    FD_ZERO(&rfds);
+    FD_SET(fd, &rfds);
+
+    tv.tv_sec = get_remaining_time();
+    tv.tv_usec = 0;
+
+    int ret = select(fd + 1, &rfds, NULL, NULL, &tv);
+
+    if(ret > 0){
+        // this mean one or more file descriptor has been written to
+        read(fd, message, sizeof(*message));
+        register_op(*message, GOTRS);
+    } else if (ret == 0) {   
+        // select timed out
+        register_op(*message, GAVUP);
+    } else {
+        perror("select");
+    }
+}
+
 /**
  * Get response from a request. 
  * Probably need to return a struct request, read from the private pipe (idk how to read it from pipe, how does the output of the request come?)
@@ -45,8 +78,7 @@ Message get_response() {
     if (fd < 0) {
         fprintf(stdout, "Could not open public_pipe\n");
     } else {
-        read(fd, &response, sizeof(response));
-        register_op(response, GOTRS);
+        read_message(fd, &response);
     }
 
     close(fd);
@@ -117,7 +149,6 @@ int parse_args(int argc, char* argv[], int *inputTime) {
 }
 
 int main(int argc, char* argv[]) {
-    int inputTime;
     parse_args(argc, argv, &inputTime);
     /*if (parse_args(argc, argv) != 0) {
         fprintf(stderr, "Invalid arguments.\n");

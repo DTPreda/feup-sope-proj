@@ -1,4 +1,5 @@
 #include <time.h>
+#include <math.h>
 #include <stdio.h>
 #include <fcntl.h>
 #include <stdlib.h>
@@ -6,8 +7,9 @@
 #include <string.h>
 #include <pthread.h>
 #include <sys/stat.h>
+#include <sys/select.h>
+#include <sys/signalfd.h>
 #include "register.h"
-#include <math.h>
 #include "common.h"
 
 #define DEFAULT_CLIENT_RESULT -1
