@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <time.h>
 #include "common.h"
+#include <pthread.h>
+
 
 #define IWANT 0
 #define GOTRS 1

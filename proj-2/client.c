@@ -12,23 +12,24 @@ pthread_mutex_t control_id = PTHREAD_MUTEX_INITIALIZER;
  * Make a request to Servidor
  * Probably need to pass the struct request throw argument and store it in public_pipe (putting it in public_pipe is making a request)
  */ 
-void make_request(Message msg) {
+int make_request(Message msg) {
     pthread_mutex_lock(&access_public_pipe);        
     
     // Writing the task Client want Servidor to perform
-    int fd = open(public_pipe, O_WRONLY);  
+    int fd = open(public_pipe, O_WRONLY );  
     if (fd < 0) {
-        // SERVIDOR FECHOU A FIFO, GUARDAR INFORMACAO
-        fprintf(stdout, "Could not open public_pipe, make\n");
+        // FIFO ESTA FECHADA 
+        pthread_mutex_unlock(&access_public_pipe);
+        return -1;
     } else {
         register_op(msg, IWANT);
         write(fd, &msg, sizeof(msg)); // waits...
     }
 
     close(fd);
-
     /* PROCESS MESSAGE, WRITE THAT SENT A REQUEST, ETC */
     pthread_mutex_unlock(&access_public_pipe);
+    return 0;
 }
 
 time_t get_remaining_time(){
@@ -72,7 +73,6 @@ void read_message(int fd, Message* message){
 
 /**
  * Get response from a request. 
- * Probably need to return a struct request, read from the private pipe (idk how to read it from pipe, how does the output of the request come?)
  */ 
 Message get_response() {
     char private_pipe[50];
@@ -85,12 +85,13 @@ Message get_response() {
     if (fd < 0) {
         fprintf(stdout, "Could not open private_pipe\n");
     } else {
-        read_message(fd, &response);
+        // read_message(fd, &response);
+        read(fd, &response, sizeof(response));
+        register_op(response, GOTRS);
     }
 
     close(fd);
     
-    /* PROCESS Message, WRITE THAT RECEIVED THE RETURN OF THE REQUEST, ETC */
     return response;
 }
 
@@ -121,7 +122,10 @@ void *client_thread_func(void * argument) {
         fprintf(stderr, "mkfifo()");
     }     // private channel
 
-    make_request(order);
+    if (make_request(order) == -1) {
+        fprintf(stdout, "A public pipe esta fechada\n");
+        return (NULL);
+    }
 
     Message response = get_response();   
     
@@ -129,7 +133,8 @@ void *client_thread_func(void * argument) {
         register_op(response, CLOSD);
         // terminate the program
     }
-   
+
+    fprintf(stdout, "FECHOU: %d\n", response.rid);
     if (remove(private_fifo) != 0){
         fprintf(stderr, "remove(private_fifo)\n");
     } 
@@ -165,19 +170,21 @@ int main(int argc, char* argv[]) {
     int creationSleep = (rand() % (upper - lower + 1)) + lower;
 
     // time = 5, num = 1, max 50 threads (gave 10 + 1 to make sure it doesnt pass it)
-    int maxNThreads = (inputTime * (10 + 1) / creationSleep);      
+    int maxNThreads = (inputTime * (1000 + 1) / creationSleep);      
 	
     pthread_t *ptid;
     ptid = (pthread_t *) malloc(maxNThreads * sizeof(pthread_t));
     
     int numThreads = 0;
-    for (; ; numThreads++){
-        usleep(creationSleep*pow(10, 5));       // this is 0.creationSleep seconds
+    while(1) {
+        usleep(creationSleep*pow(10, 3));       // this is 0.creationSleep seconds
 
-        if (get_remaining_time() == 0) 
+        if (get_remaining_time() == 0 || numThreads >= maxNThreads) 
             break;
+
         
         pthread_create(&ptid[numThreads], NULL, client_thread_func, NULL);
+        numThreads++;
     }
 
     for (int i = 0; i < numThreads; i++){
