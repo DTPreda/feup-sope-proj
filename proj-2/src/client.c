@@ -1,4 +1,4 @@
-#include "./client.h"
+#include "src/client.h"
 
 int inputTime;
 int isClosed = 0;
@@ -17,17 +17,17 @@ pthread_mutex_t access_is_closed = PTHREAD_MUTEX_INITIALIZER;
  */ 
 int make_request(Message msg) {
     register_op(msg, IWANT);
-    
+
     // Writing the task Client wants Server to perform
     int fd;
 
-    while((fd = open(public_pipe, O_WRONLY | O_NONBLOCK)) < 1 && get_remaining_time() != 0) ;
+    while ((fd = open(public_pipe, O_WRONLY | O_NONBLOCK)) < 1 && get_remaining_time() != 0) {}
     if (get_remaining_time() == 0) {
         return -1;
     }
 
-    pthread_mutex_lock(&access_public_pipe);        
-    write(fd, &msg, sizeof(msg)); // waits...
+    pthread_mutex_lock(&access_public_pipe);
+    write(fd, &msg, sizeof(msg));   // waits...
     pthread_mutex_unlock(&access_public_pipe);
 
     close(fd);
@@ -37,7 +37,7 @@ int make_request(Message msg) {
 /**
  * @return returns 0 if there is no time remaining, otherwise the time remaining
  */ 
-time_t get_remaining_time(){
+time_t get_remaining_time() {
     time_t current_time = time(NULL);
 
     time_t ret = startTime + inputTime - current_time;
@@ -51,7 +51,7 @@ void read_message(int fd, Message* message) {
 
     FD_ZERO(&rfds);
     FD_SET(fd, &rfds);
-    
+
     time_t remaining_time = get_remaining_time();
 
     if (remaining_time == 0) {
@@ -90,8 +90,8 @@ void get_response(Message *response) {
         response->tskres = ISGAVUP;
     } else {
         read_message(fd, response);
-        //read(fd, response, sizeof(*response));
-        //register_op(*response, GOTRS);
+        //  read(fd, response, sizeof(*response));
+        //  register_op(*response, GOTRS);
     }
 
     close(fd);
@@ -103,7 +103,8 @@ void get_response(Message *response) {
 void *client_thread_func(void * argument) {
     // generate number between 1 and 9
     int upper = 9, lower = 1;
-    int num = (rand_r((unsigned) pthread_self()) % (upper - lower + 1)) + lower;
+    int num = (rand_r((unsigned *) pthread_self()) % (upper - lower + 1)) + lower;
+    printf("num = %d", num);
 
     Message order;
     order.tskload = num;
@@ -132,18 +133,18 @@ void *client_thread_func(void * argument) {
     Message response = order;
 
     get_response(&response);
-    
-    //if(response.rid == 200) response.tskres = -1;
-    
-    if(response.tskres == -1) {
+
+    //  if(response.rid == 200) response.tskres = -1;
+
+    if (response.tskres == -1) {
         register_op(response, CLOSD);
         pthread_mutex_lock(&access_is_closed);
         isClosed = 1;
         pthread_mutex_unlock(&access_is_closed);
     }
 
-    //fprintf(stdout, "FECHOU: %d\n", response.rid);
-    if (remove(private_fifo) != 0){
+    //  fprintf(stdout, "FECHOU: %d\n", response.rid);
+    if (remove(private_fifo) != 0) {
         fprintf(stderr, "remove(private_fifo)\n");
     }
 
@@ -175,7 +176,7 @@ int main(int argc, char* argv[]) {
     // generate number between 1 and 9
 
     int upper = 9, lower = 1;
-    int creationSleep = (rand_r(&startTime) % (upper - lower + 1)) + lower;
+    int creationSleep = (rand_r((unsigned *) startTime) % (upper - lower + 1)) + lower;
 
     // time=5,num=1, max 50 threads (gave 10 + 1 to make sure it doesnt pass it)
     int maxNThreads = (inputTime * (1000 + 1) / creationSleep);
@@ -184,13 +185,13 @@ int main(int argc, char* argv[]) {
     ptid = (pthread_t *) malloc(maxNThreads * sizeof(pthread_t));
 
     int numThreads = 0;
-    while(1) {
+    while (1) {
         pthread_mutex_lock(&access_is_closed);
-        if (get_remaining_time() == 0 || numThreads >= maxNThreads || isClosed) 
+        if (get_remaining_time() == 0 || numThreads >= maxNThreads || isClosed)
             break;
         pthread_mutex_unlock(&access_is_closed);
-        
-        usleep(creationSleep*pow(10, 3));       // this is 0.creationSleep seconds
+
+        usleep(creationSleep*pow(10, 3));  //  this is 0.creationSleep seconds
 
         pthread_create(&ptid[numThreads], NULL, client_thread_func, NULL);
         numThreads++;
