@@ -51,6 +51,7 @@ void read_message(int fd, Message* message){
 
     if (remaining_time == 0) {
         register_op(*message, GAVUP);
+        message->tskres = ISGAVUP;
     } else {
         tv.tv_sec = remaining_time;
         tv.tv_usec = 0;
@@ -64,6 +65,7 @@ void read_message(int fd, Message* message){
         } else if (ret == 0) {   
             // select timed out
             register_op(*message, GAVUP);
+            message->tskres = ISGAVUP;
         } else {
             perror("select");
         }
@@ -73,9 +75,8 @@ void read_message(int fd, Message* message){
 /**
  * Get response from a request. 
  */ 
-Message get_response() {
+Message get_response(Message* msg) {
     char private_pipe[50];
-    Message response;
 
     snprintf(private_pipe, 50, "/tmp/%d.%lu", getpid(), (unsigned long) pthread_self());
 
@@ -84,15 +85,16 @@ Message get_response() {
     if (fd < 0) {
         fprintf(stdout, "Could not open private_pipe\n");
     } else {
-        // read_message(fd, &response);
-        read(fd, &response, sizeof(response));
-        register_op(response, GOTRS);
+        read_message(fd, msg);
+        //read(fd, msg, sizeof(*msg));
+        //register_op(*msg, GOTRS);
     }
 
     close(fd);
-    
-    return response;
+
+    return *msg;
 }
+
 
 /**
  * Func to create client threads. It creates a private fifo to communicate with Servidor
@@ -126,14 +128,14 @@ void *client_thread_func(void * argument) {
         return (NULL);
     }
 
-    Message response = get_response();   
+    Message response = get_response(&order);   
     
     if(response.tskres == -1) {
         register_op(response, CLOSD);
         // terminate the program
     }
 
-    fprintf(stdout, "FECHOU: %d\n", response.rid);
+    //fprintf(stdout, "FECHOU: %d\n", response.rid);
     if (remove(private_fifo) != 0){
         fprintf(stderr, "remove(private_fifo)\n");
     } 
@@ -176,10 +178,10 @@ int main(int argc, char* argv[]) {
     
     int numThreads = 0;
     while(1) {
-        usleep(creationSleep*pow(10, 3));       // this is 0.creationSleep seconds
-
         if (get_remaining_time() == 0 || numThreads >= maxNThreads) 
             break;
+        
+        usleep(creationSleep*pow(10, 3));       // this is 0.creationSleep seconds
 
         
         pthread_create(&ptid[numThreads], NULL, client_thread_func, NULL);
