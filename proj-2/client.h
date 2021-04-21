@@ -18,6 +18,6 @@
 time_t get_remaining_time();
 void read_message(int fd, Message* message);
 int make_request(Message msg);
-Message get_response();
+void get_response(Message *response);
 void *client_thread_func(void* argument);
 int parse_args(int argc, char* argv[], int* inputTime);
