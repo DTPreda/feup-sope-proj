@@ -15,7 +15,9 @@
 #define DEFAULT_CLIENT_RESULT -1
 #define NTHREADS 10
 
-void make_request(Message msg);
+time_t get_remaining_time();
+void read_message(int fd, Message* message);
+int make_request(Message msg);
 Message get_response();
 time_t get_remaining_time();
 void read_message(int fd, Message* message);
