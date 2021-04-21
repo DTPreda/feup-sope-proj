@@ -1,38 +1,43 @@
 #include "./client.h"
 
 int inputTime;
+int isClosed = 0;
 time_t startTime;
 char* public_pipe;
 static int global_id = 0;
 pthread_mutex_t access_public_pipe = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t control_id = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t access_is_closed = PTHREAD_MUTEX_INITIALIZER;
 
 
 /**
  * Make a request to Servidor
- * Probably need to pass the struct request throw argument and store it in public_pipe (putting it in public_pipe is making a request)
+ * @param Message request to be sent to Servidor
+ * @return -1 when could not open public pipe, 0 if everything went well
  */ 
 int make_request(Message msg) {
-    pthread_mutex_lock(&access_public_pipe);
+    register_op(msg, IWANT);
+    
+    // Writing the task Client wants Server to perform
+    int fd;
 
-    // Writing the task Client want Servidor to perform
-    int fd = open(public_pipe, O_WRONLY);
-    if (fd < 0) {
-        // FIFO ESTA FECHADA
-        pthread_mutex_unlock(&access_public_pipe);
+    while((fd = open(public_pipe, O_WRONLY | O_NONBLOCK)) < 1 && get_remaining_time() != 0) ;
+    if (get_remaining_time() == 0) {
         return -1;
-    } else {
-        register_op(msg, IWANT);
-        write(fd, &msg, sizeof(msg));  // waits...
     }
 
-    close(fd);
-    /* PROCESS MESSAGE, WRITE THAT SENT A REQUEST, ETC */
+    pthread_mutex_lock(&access_public_pipe);        
+    write(fd, &msg, sizeof(msg)); // waits...
     pthread_mutex_unlock(&access_public_pipe);
+
+    close(fd);
     return 0;
 }
 
-time_t get_remaining_time() {
+/**
+ * @return returns 0 if there is no time remaining, otherwise the time remaining
+ */ 
+time_t get_remaining_time(){
     time_t current_time = time(NULL);
 
     time_t ret = startTime + inputTime - current_time;
@@ -46,15 +51,15 @@ void read_message(int fd, Message* message) {
 
     FD_ZERO(&rfds);
     FD_SET(fd, &rfds);
-
+    
     time_t remaining_time = get_remaining_time();
 
     if (remaining_time == 0) {
         register_op(*message, GAVUP);
+        message->tskres = ISGAVUP;
     } else {
         tv.tv_sec = remaining_time;
         tv.tv_usec = 0;
-
         int ret = select(fd + 1, &rfds, NULL, NULL, &tv);
 
         if (ret > 0) {
@@ -64,6 +69,7 @@ void read_message(int fd, Message* message) {
         } else if (ret == 0) {
             // select timed out
             register_op(*message, GAVUP);
+            message->tskres = ISGAVUP;
         } else {
             perror("select");
         }
@@ -73,24 +79,22 @@ void read_message(int fd, Message* message) {
 /**
  * Get response from a request. 
  */ 
-Message get_response() {
+void get_response(Message *response) {
     char private_pipe[50];
-    Message response;
-    snprintf(private_pipe, sizeof(private_pipe), "/tmp/%d.%lu", getpid(), (unsigned long) pthread_self());
+    snprintf(private_pipe, 50, "/tmp/%d.%lu", getpid(), (unsigned long) pthread_self());
 
     // Writing the task Client want Servidor to perform
     int fd = open(private_pipe, O_RDONLY | O_NONBLOCK);
     if (fd < 0) {
         fprintf(stdout, "Could not open private_pipe\n");
+        response->tskres = ISGAVUP;
     } else {
-        // read_message(fd, &response);
-        read(fd, &response, sizeof(response));
-        register_op(response, GOTRS);
+        read_message(fd, response);
+        //read(fd, response, sizeof(*response));
+        //register_op(*response, GOTRS);
     }
 
     close(fd);
-
-    return response;
 }
 
 /**
@@ -117,22 +121,29 @@ void *client_thread_func(void * argument) {
 
     if (mkfifo(private_fifo, 0666) < 0) {
         fprintf(stderr, "mkfifo()");
-        return NULL;
+        return (NULL);
     }     // private channel
 
     if (make_request(order) == -1) {
-        fprintf(stdout, "A public pipe esta fechada\n");
-        return NULL;
+        register_op(order, GAVUP);
+        return (NULL);
     }
 
-    Message response = get_response();
+    Message response = order;
 
-    if (response.tskres == -1) {
+    get_response(&response);
+    
+    //if(response.rid == 200) response.tskres = -1;
+    
+    if(response.tskres == -1) {
         register_op(response, CLOSD);
+        pthread_mutex_lock(&access_is_closed);
+        isClosed = 1;
+        pthread_mutex_unlock(&access_is_closed);
     }
 
-    fprintf(stdout, "FECHOU: %d\n", response.rid);
-    if (remove(private_fifo) != 0) {
+    //fprintf(stdout, "FECHOU: %d\n", response.rid);
+    if (remove(private_fifo) != 0){
         fprintf(stderr, "remove(private_fifo)\n");
     }
 
@@ -173,12 +184,13 @@ int main(int argc, char* argv[]) {
     ptid = (pthread_t *) malloc(maxNThreads * sizeof(pthread_t));
 
     int numThreads = 0;
-    while (1) {
-        usleep(creationSleep*pow(10, 3));  // this is 0.creationSleep seconds
-
-        if (get_remaining_time() == 0 || numThreads >= maxNThreads)
+    while(1) {
+        pthread_mutex_lock(&access_is_closed);
+        if (get_remaining_time() == 0 || numThreads >= maxNThreads || isClosed) 
             break;
-
+        pthread_mutex_unlock(&access_is_closed);
+        
+        usleep(creationSleep*pow(10, 3));       // this is 0.creationSleep seconds
 
         pthread_create(&ptid[numThreads], NULL, client_thread_func, NULL);
         numThreads++;
@@ -187,6 +199,8 @@ int main(int argc, char* argv[]) {
     for (int i = 0; i < numThreads; i++) {
         pthread_join(ptid[i], NULL);
     }
+
+    free(ptid);
 
     return 0;
 }
