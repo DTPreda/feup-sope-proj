@@ -1,5 +1,5 @@
-#ifndef CLIENT_H_
-#define CLIENT_H_
+#ifndef SRC_CLIENT_H_
+#define SRC_CLIENT_H_
 #include <time.h>
 #include <math.h>
 #include <stdio.h>
@@ -27,4 +27,4 @@ void read_message(int fd, Message* message);
 void *client_thread_func(void* argument);
 int parse_args(int argc, char* argv[], int* inputTime);
 
-#endif  // CLIENT_H_
+#endif  // SRC_CLIENT_H_
