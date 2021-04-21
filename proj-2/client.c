@@ -134,7 +134,7 @@ void *client_thread_func(void * argument) {
 
     get_response(&response);
     
-    if(response.rid == 200) response.tskres = -1;
+    //if(response.rid == 200) response.tskres = -1;
     
     if(response.tskres == -1) {
         register_op(response, CLOSD);
