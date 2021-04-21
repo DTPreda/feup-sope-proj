@@ -66,7 +66,6 @@ void read_message(int fd, Message* message){
         } else {
             perror("select");
         }
-
     }
 }
 
@@ -183,6 +182,8 @@ int main(int argc, char* argv[]) {
     for (int i = 0; i < numThreads; i++){
         pthread_join(ptid[i],NULL);
     }
+
+    free(ptid);
 
     return 0;
 }
