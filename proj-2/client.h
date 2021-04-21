@@ -19,7 +19,7 @@
 time_t get_remaining_time();
 void read_message(int fd, Message* message);
 int make_request(Message msg);
-Message get_response(Message* msg);
+void get_response(Message *response);
 time_t get_remaining_time();
 void read_message(int fd, Message* message);
 void *client_thread_func(void* argument);
