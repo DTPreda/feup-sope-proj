@@ -1,4 +1,4 @@
-#include "client.h" 
+#include "./client.h"
 
 int inputTime;
 time_t startTime;
@@ -13,17 +13,17 @@ pthread_mutex_t control_id = PTHREAD_MUTEX_INITIALIZER;
  * Probably need to pass the struct request throw argument and store it in public_pipe (putting it in public_pipe is making a request)
  */ 
 int make_request(Message msg) {
-    pthread_mutex_lock(&access_public_pipe);        
-    
+    pthread_mutex_lock(&access_public_pipe);
+
     // Writing the task Client want Servidor to perform
-    int fd = open(public_pipe, O_WRONLY );  
+    int fd = open(public_pipe, O_WRONLY);
     if (fd < 0) {
-        // FIFO ESTA FECHADA 
+        // FIFO ESTA FECHADA
         pthread_mutex_unlock(&access_public_pipe);
         return -1;
     } else {
         register_op(msg, IWANT);
-        write(fd, &msg, sizeof(msg)); // waits...
+        write(fd, &msg, sizeof(msg));  // waits...
     }
 
     close(fd);
@@ -32,15 +32,15 @@ int make_request(Message msg) {
     return 0;
 }
 
-time_t get_remaining_time(){
+time_t get_remaining_time() {
     time_t current_time = time(NULL);
 
     time_t ret = startTime + inputTime - current_time;
-    if(ret < 0) return 0;
+    if (ret < 0) return 0;
     return ret;
 }
 
-void read_message(int fd, Message* message){
+void read_message(int fd, Message* message) {
     fd_set rfds;
     struct timeval tv;
 
@@ -61,13 +61,12 @@ void read_message(int fd, Message* message){
             // this mean one or more file descriptor has been written to
             read(fd, message, sizeof(*message));
             register_op(*message, GOTRS);
-        } else if (ret == 0) {   
+        } else if (ret == 0) {
             // select timed out
             register_op(*message, GAVUP);
         } else {
             perror("select");
         }
-
     }
 }
 
@@ -77,11 +76,10 @@ void read_message(int fd, Message* message){
 Message get_response() {
     char private_pipe[50];
     Message response;
-
-    snprintf(private_pipe, 50, "/tmp/%d.%lu", getpid(), (unsigned long) pthread_self());
+    snprintf(private_pipe, sizeof(private_pipe), "/tmp/%d.%lu", getpid(), (unsigned long) pthread_self());
 
     // Writing the task Client want Servidor to perform
-    int fd = open(private_pipe, O_RDONLY);
+    int fd = open(private_pipe, O_RDONLY | O_NONBLOCK);
     if (fd < 0) {
         fprintf(stdout, "Could not open private_pipe\n");
     } else {
@@ -91,7 +89,7 @@ Message get_response() {
     }
 
     close(fd);
-    
+
     return response;
 }
 
@@ -99,11 +97,9 @@ Message get_response() {
  * Func to create client threads. It creates a private fifo to communicate with Servidor
  */
 void *client_thread_func(void * argument) {
-    
     // generate number between 1 and 9
     int upper = 9, lower = 1;
-    srand((unsigned) pthread_self());
-    int num = (rand() % (upper - lower + 1)) + lower;
+    int num = (rand_r((unsigned) pthread_self()) % (upper - lower + 1)) + lower;
 
     Message order;
     order.tskload = num;
@@ -117,28 +113,29 @@ void *client_thread_func(void * argument) {
     pthread_mutex_unlock(&control_id);
 
     char private_fifo[50];
-    snprintf(private_fifo, 50, "/tmp/%d.%lu", getpid(), (unsigned long) pthread_self());
-    if (mkfifo(private_fifo, 0666) < 0){
+    snprintf(private_fifo, sizeof(private_fifo), "/tmp/%d.%lu", getpid(), (unsigned long) pthread_self());
+
+    if (mkfifo(private_fifo, 0666) < 0) {
         fprintf(stderr, "mkfifo()");
+        return NULL;
     }     // private channel
 
     if (make_request(order) == -1) {
         fprintf(stdout, "A public pipe esta fechada\n");
-        return (NULL);
+        return NULL;
     }
 
-    Message response = get_response();   
-    
-    if(response.tskres == -1) {
+    Message response = get_response();
+
+    if (response.tskres == -1) {
         register_op(response, CLOSD);
-        // terminate the program
     }
 
     fprintf(stdout, "FECHOU: %d\n", response.rid);
-    if (remove(private_fifo) != 0){
+    if (remove(private_fifo) != 0) {
         fprintf(stderr, "remove(private_fifo)\n");
-    } 
-    
+    }
+
     return(NULL);
 }
 
@@ -163,32 +160,32 @@ int main(int argc, char* argv[]) {
     }
 
     time(&startTime);
-    
-    // generate number between 1 and 9
-    srand((unsigned) startTime);
-    int upper = 9, lower = 1;
-    int creationSleep = (rand() % (upper - lower + 1)) + lower;
 
-    // time = 5, num = 1, max 50 threads (gave 10 + 1 to make sure it doesnt pass it)
-    int maxNThreads = (inputTime * (1000 + 1) / creationSleep);      
-	
+    // generate number between 1 and 9
+
+    int upper = 9, lower = 1;
+    int creationSleep = (rand_r(&startTime) % (upper - lower + 1)) + lower;
+
+    // time=5,num=1, max 50 threads (gave 10 + 1 to make sure it doesnt pass it)
+    int maxNThreads = (inputTime * (1000 + 1) / creationSleep);
+
     pthread_t *ptid;
     ptid = (pthread_t *) malloc(maxNThreads * sizeof(pthread_t));
-    
-    int numThreads = 0;
-    while(1) {
-        usleep(creationSleep*pow(10, 3));       // this is 0.creationSleep seconds
 
-        if (get_remaining_time() == 0 || numThreads >= maxNThreads) 
+    int numThreads = 0;
+    while (1) {
+        usleep(creationSleep*pow(10, 3));  // this is 0.creationSleep seconds
+
+        if (get_remaining_time() == 0 || numThreads >= maxNThreads)
             break;
 
-        
+
         pthread_create(&ptid[numThreads], NULL, client_thread_func, NULL);
         numThreads++;
     }
 
-    for (int i = 0; i < numThreads; i++){
-        pthread_join(ptid[i],NULL);
+    for (int i = 0; i < numThreads; i++) {
+        pthread_join(ptid[i], NULL);
     }
 
     return 0;

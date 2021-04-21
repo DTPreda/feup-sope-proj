@@ -1,10 +1,10 @@
-#ifndef _COMMON_H
-#define _COMMON_H 1
+#ifndef COMMON_H_
+#define COMMON_H_ 1
 typedef struct {
-	int rid; 										// request id
-	pid_t pid; 										// process id
-	pthread_t tid;									// thread id
-	int tskload;									// task load
-	int tskres;										// task result
+    int rid;        // request id
+    pid_t pid;      // process id
+    pthread_t tid;  // thread id
+    int tskload;    // task load
+    int tskres;     // task result
 } Message;
-#endif // _COMMON_H
+#endif  // COMMON_H_
