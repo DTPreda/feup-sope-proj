@@ -9,12 +9,6 @@ pthread_mutex_t output_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t g_rid_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t closd_mutex = PTHREAD_MUTEX_INITIALIZER; 
 
-void sig_handler(int signo){
-    if(signo == SIGALRM){
-        pthread_exit(NULL);
-    }
-}
-
 time_t get_remaining_time(){
     time_t current_time = time(NULL);
 
