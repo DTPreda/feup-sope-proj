@@ -71,14 +71,14 @@ int make_request(Message* msg){
     if((sl = select(fd + 1, NULL, &wfds, NULL, &tv)) == -1){
         perror("select");
         ret = 1;
-    } else if (sl > 0) { //rfds has something to be read
+    } else if (sl > 0) {        
         if(write(fd, msg, sizeof(*msg)) == -1) {
             perror("write");
             ret = 1;
         } 
         register_operation(*msg, IWANT);
-    } else if (sl == 0){ //timeout
-        //register_operation(*msg, GAVUP);
+    } else if (sl == 0){         // timeout
+        // register_operation(*msg, GAVUP);
         ret = 1;
     }
     
@@ -112,14 +112,14 @@ int get_result(char* private_pipe, Message* msg){
     if((sl = select(fd + 1, &rfds, NULL, NULL, &tv)) == -1){
         perror("select");
         ret = 1;
-    } else if (sl > 0) { //rfds has something to be read
+    } else if (sl > 0) {    // rfds has something to be read
         if(read(fd, msg, sizeof(*msg)) < 0) {
             perror("read");
             ret = 1;
         } else {
             register_result(*msg);
         }
-    } else if (sl == 0){ //timeout
+    } else if (sl == 0){    // timeout
         register_operation(*msg, GAVUP);
     }
 
@@ -142,7 +142,12 @@ int request_setup(char* private_pipe, Message* msg){
     pthread_mutex_unlock(&g_rid_mutex);
     msg->pid = getpid();
     msg->tid = pthread_self();
-    msg->tskload = 1;
+
+    int upper = 9, lower = 1;
+    unsigned r = (unsigned) pthread_self();
+    int num = (rand_r(&r) % (upper - lower + 1)) + lower;
+    msg->tskload = num;
+
     msg->tskres = -1;
 
     return 0;
@@ -152,12 +157,12 @@ void *request(void* argument){
     char private_pipe[100];
     Message msg;
 
-    if(request_setup(private_pipe, &msg) != 0) return NULL;
-    if(make_request(&msg) == 0){
+    if (request_setup(private_pipe, &msg) != 0) return NULL;
+    if (make_request(&msg) == 0) {
         get_result(private_pipe, &msg);
     }
 
-    if(remove(private_pipe) != 0){
+    if (remove(private_pipe) != 0) {
         perror("remove");
     }
 
