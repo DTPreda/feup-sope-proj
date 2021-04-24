@@ -1,4 +1,4 @@
-#include "client.h"
+#include "./client.h"
 
 int inputTime;
 time_t startTime;
@@ -7,20 +7,20 @@ int global_rid = 0;
 int is_closd = 0;
 pthread_mutex_t output_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t g_rid_mutex = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t closd_mutex = PTHREAD_MUTEX_INITIALIZER; 
+pthread_mutex_t closd_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-time_t get_remaining_time(){
+time_t get_remaining_time() {
     time_t current_time = time(NULL);
 
     time_t ret = startTime + inputTime - current_time;
-    if(ret < 0) return 0;
+    if (ret < 0) return 0;
     return ret;
 }
 
-int parse_arguments(int argc, char* argv[]){
-    if(argc != 4) return 1;
-    if(strncmp(argv[1], "-t", 2) != 0) return 1;
-    if(atoi(argv[2]) < 0) return 1;
+int parse_arguments(int argc, char* argv[]) {
+    if (argc != 4) return 1;
+    if (strncmp(argv[1], "-t", 2) != 0) return 1;
+    if (atoi(argv[2]) < 0) return 1;
 
     inputTime = atoi(argv[2]);
     public_pipe = argv[3];
@@ -28,13 +28,13 @@ int parse_arguments(int argc, char* argv[]){
     return 0;
 }
 
-void register_operation(Message msg, int type){
+void register_operation(Message msg, int type) {
     time_t t = time(NULL);
-    if(t == -1) return;
+    if (t == -1) return;
 
     pthread_mutex_lock(&output_mutex);
     fprintf(stdout, "%li ; %i ; %i ; %i ; %lu ; %i ; ", t, msg.rid, msg.tskload, msg.pid , (unsigned long) msg.tid, msg.tskres);
-    switch(type){
+    switch (type) {
         case(IWANT):
             fprintf(stdout, "IWANT");
             break;
@@ -54,11 +54,11 @@ void register_operation(Message msg, int type){
     pthread_mutex_unlock(&output_mutex);
 }
 
-int make_request(Message* msg){
+int make_request(Message* msg) {
     int fd;
     int ret = 0, sl;
 
-    while((fd = open(public_pipe, O_WRONLY | O_NONBLOCK)) == -1 && get_remaining_time() > 0){} 
+    while ((fd = open(public_pipe, O_WRONLY | O_NONBLOCK)) == -1 && get_remaining_time() > 0) {}
 
     fd_set wfds;
     FD_ZERO(&wfds);
@@ -67,28 +67,29 @@ int make_request(Message* msg){
     struct timeval tv;
     tv.tv_sec = get_remaining_time();
     tv.tv_usec = 0;
-    
-    if((sl = select(fd + 1, NULL, &wfds, NULL, &tv)) == -1){
+
+    if ((sl = select(fd + 1, NULL, &wfds, NULL, &tv)) == -1) {
         perror("select");
         ret = 1;
-    } else if (sl > 0) {        
-        if(write(fd, msg, sizeof(*msg)) == -1) {
+    } else if (sl > 0) {
+        if (write(fd, msg, sizeof(*msg)) == -1) {
             perror("write");
             ret = 1;
-        } 
+        }
         register_operation(*msg, IWANT);
-    } else if (sl == 0){         // timeout
+    } else if (sl == 0) {  // timeout
         // register_operation(*msg, GAVUP);
         ret = 1;
     }
-    
+
     close(fd);
     return ret;
 }
 
-void register_result(Message msg){
-    if(msg.tskres != -1) register_operation(msg, GOTRS);
-    else {
+void register_result(Message msg) {
+    if (msg.tskres != -1) {
+       register_operation(msg, GOTRS);
+    } else {
         register_operation(msg, CLOSD);
 
         pthread_mutex_lock(&closd_mutex);
@@ -97,10 +98,10 @@ void register_result(Message msg){
     }
 }
 
-int get_result(char* private_pipe, Message* msg){
+int get_result(char* private_pipe, Message* msg) {
     int ret = 0, sl;
     int fd;
-    while((fd = open(private_pipe, O_RDONLY | O_NONBLOCK)) == -1 && get_remaining_time() > 0){} 
+    while ((fd = open(private_pipe, O_RDONLY | O_NONBLOCK)) == -1 && get_remaining_time() > 0) {}
 
     fd_set rfds;
     FD_ZERO(&rfds);
@@ -109,17 +110,17 @@ int get_result(char* private_pipe, Message* msg){
     struct timeval tv;
     tv.tv_sec = get_remaining_time();
     tv.tv_usec = 0;
-    if((sl = select(fd + 1, &rfds, NULL, NULL, &tv)) == -1){
+    if ((sl = select(fd + 1, &rfds, NULL, NULL, &tv)) == -1) {
         perror("select");
         ret = 1;
     } else if (sl > 0) {    // rfds has something to be read
-        if(read(fd, msg, sizeof(*msg)) < 0) {
+        if (read(fd, msg, sizeof(*msg)) < 0) {
             perror("read");
             ret = 1;
         } else {
             register_result(*msg);
         }
-    } else if (sl == 0){    // timeout
+    } else if (sl == 0) {    // timeout
         register_operation(*msg, GAVUP);
     }
 
@@ -128,13 +129,13 @@ int get_result(char* private_pipe, Message* msg){
     return ret;
 }
 
-int request_setup(char* private_pipe, Message* msg){
+int request_setup(char* private_pipe, Message* msg) {
     snprintf(private_pipe, 100, "/tmp/%i.%lu", getpid(), pthread_self());
 
-    if(mkfifo(private_pipe, 0666) != 0){
+    if (mkfifo(private_pipe, 0666) != 0) {
         perror("mkfifo");
-        return 1;  
-    } 
+        return 1;
+    }
 
     pthread_mutex_lock(&g_rid_mutex);
     msg->rid = global_rid;
@@ -153,7 +154,7 @@ int request_setup(char* private_pipe, Message* msg){
     return 0;
 }
 
-void *request(void* argument){    
+void *request(void* argument){
     char private_pipe[100];
     Message msg;
 
@@ -169,21 +170,20 @@ void *request(void* argument){
     return NULL;
 }
 
-int main (int argc, char* argv[]){
-
-    if(parse_arguments(argc, argv) != 0) return 1;
+int main(int argc, char* argv[]) {
+    if (parse_arguments(argc, argv) != 0) return 1;
 
     time(&startTime);
-
-    int creationSleep = (rand() % (9  - 1 + 1)) + 1;
+    unsigned r = time(NULL);
+    int creationSleep = (rand_r(&r) % (9  - 1 + 1)) + 1;
     int maxNThreads = (inputTime * (1000 + 1) / creationSleep);
 
     pthread_t* pid;
     pid = (pthread_t*) malloc(maxNThreads * sizeof(pthread_t));
     int numThreads = 0;
-    while(1) {
+    while (1) {
         pthread_mutex_lock(&closd_mutex);
-        if (numThreads >= maxNThreads || get_remaining_time() == 0 || is_closd) 
+        if (numThreads >= maxNThreads || get_remaining_time() == 0 || is_closd)
             break;
         pthread_mutex_unlock(&closd_mutex);
 
@@ -193,9 +193,9 @@ int main (int argc, char* argv[]){
         numThreads++;
     }
 
-    for (int i = 0; i < numThreads; i++){
-        pthread_join(pid[i],NULL);
+    for (int i = 0; i < numThreads; i++) {
+        pthread_join(pid[i], NULL);
     }
-    
+
     return 0;
 }
