@@ -1,4 +1,4 @@
-#include "./register.h"
+#include "src/register.h"
 
 pthread_mutex_t output_controller;
 

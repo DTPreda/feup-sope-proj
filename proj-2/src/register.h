@@ -1,5 +1,5 @@
-#ifndef REGISTER_H_
-#define REGISTER_H_
+#ifndef SRC_REGISTER_H_
+#define SRC_REGISTER_H_
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -13,4 +13,4 @@
 
 void register_op(Message msg, int type);
 
-#endif  // REGISTER_H_
+#endif  // SRC_REGISTER_H_
