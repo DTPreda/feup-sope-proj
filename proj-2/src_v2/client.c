@@ -154,7 +154,7 @@ int request_setup(char* private_pipe, Message* msg) {
     return 0;
 }
 
-void *request(void* argument){
+void *request(void* argument) {
     char private_pipe[100];
     Message msg;
 
