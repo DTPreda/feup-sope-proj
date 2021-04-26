@@ -2,11 +2,24 @@
 
 int inputTime;
 time_t startTime;
+
+struct timeval startTv;
+
 char* public_pipe;
 int public_pipe_fd;
 int global_rid = 0;
 volatile int is_closd = 0;
 pthread_mutex_t output_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+struct timeval get_remaining_time_tv() {
+    struct timeval curr;
+    gettimeofday(&curr, NULL);
+    
+    struct timeval ret;
+    ret.tv_sec = curr.tv_sec - startTv.tv_sec;
+    ret.tv_usec = curr.tv_usec - startTv.tv_usec;
+    return ret;
+}
 
 time_t get_remaining_time() {
     time_t current_time = time(NULL);
@@ -65,7 +78,11 @@ int make_request(Message* msg){
     tv.tv_usec = 0;
     
     if((sl = select(public_pipe_fd + 1, NULL, &wfds, NULL, &tv)) == -1){
+        is_closd = 1;
+        /*
+        fprintf(stdout, "Error on select make request %s, id: %d\n", public_pipe, msg->rid);
         perror("select");
+        */
         return 1;
     } else if (sl > 0) {        
         if(write(public_pipe_fd, msg, sizeof(*msg)) == -1) {
@@ -103,8 +120,18 @@ int get_result(char* private_pipe, Message* msg) {
     FD_SET(fd, &rfds);
 
     struct timeval tv;
+    /*
+    if (get_remaining_time() != 0) {
+        tv.tv_sec = get_remaining_time();
+        tv.tv_usec = 0;
+    } else {
+        tv.tv_sec = 0;
+        tv.tv_usec = get_remaining_time_tv().tv_usec;
+    }*/
+
     tv.tv_sec = get_remaining_time();
     tv.tv_usec = 0;
+    
     if ((sl = select(fd + 1, &rfds, NULL, NULL, &tv)) == -1) {
         perror("select");
         ret = 1;
@@ -158,6 +185,7 @@ void *request(void* argument) {
         get_result(private_pipe, &msg);
     }
 
+
     if (remove(private_pipe) != 0) {
         perror("remove");
     }
@@ -169,10 +197,27 @@ int main(int argc, char* argv[]) {
     if (parse_arguments(argc, argv) != 0) return 1;
 
     time(&startTime);
+    gettimeofday(&startTv, NULL);
 
     while((public_pipe_fd = open(public_pipe, O_WRONLY)) == -1 && get_remaining_time() > 0){} // does the magic for server closure
 
     int creationSleep = (rand() % (9  - 1 + 1)) + 1;
+    
+    int maxNThreads = (inputTime * (1000 + 1) / creationSleep);
+
+    pthread_t* pid;
+    pid = (pthread_t*) malloc(maxNThreads * sizeof(pthread_t));
+    int numThreads = 0;
+    while(1) {
+        if (numThreads >= maxNThreads || get_remaining_time() == 0 || is_closd) 
+            break;
+
+        usleep(creationSleep * 1000);
+
+        pthread_create(&pid[numThreads], NULL, request, NULL);
+        numThreads++;
+    }
+    /*
     pthread_t* pid = (pthread_t*) malloc(sizeof(pthread_t));
     while(1) {
         //pthread_mutex_lock(&closd_mutex);
@@ -180,7 +225,7 @@ int main(int argc, char* argv[]) {
             break;
         //pthread_mutex_unlock(&closd_mutex);
 
-        usleep(creationSleep * 10000);
+        usleep(creationSleep * 1000);
 
         pthread_attr_t attr;
         pthread_attr_init(&attr);
@@ -191,8 +236,16 @@ int main(int argc, char* argv[]) {
     free(pid);
 
     close(public_pipe_fd);
+    */
+    //pthread_exit(NULL); // -> onto something, not sure
     
-    pthread_exit(NULL); // -> onto something, not sure
+    for (int i = 0; i < numThreads; i++){
+        pthread_join(pid[i],NULL);
+    }
     
+    free(pid);
+    close(public_pipe_fd);
+    pthread_exit(NULL);
+
     //return 0;
 }
