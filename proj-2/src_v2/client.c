@@ -53,7 +53,7 @@ void register_operation(Message msg, int type) {
     pthread_mutex_unlock(&output_mutex);
 }
 
-int make_request(Message* msg){
+int make_request(Message* msg) {
     int sl;
 
     fd_set wfds;
@@ -63,21 +63,21 @@ int make_request(Message* msg){
     struct timeval tv;
     tv.tv_sec = get_remaining_time();
     tv.tv_usec = 0;
-    
-    if((sl = select(public_pipe_fd + 1, NULL, &wfds, NULL, &tv)) == -1){
+
+    if ((sl = select(public_pipe_fd + 1, NULL, &wfds, NULL, &tv)) == -1) {
         perror("select");
         return 1;
-    } else if (sl > 0) {        
-        if(write(public_pipe_fd, msg, sizeof(*msg)) == -1) {
-            //perror("write");
+    } else if (sl > 0) {
+        if (write(public_pipe_fd, msg, sizeof(*msg)) == -1) {
+            // perror("write");
             return 1;
-        } 
+        }
         register_operation(*msg, IWANT);
     } else if (sl == 0) {  // timeout
         // register_operation(*msg, GAVUP);
         return 1;
     }
-    
+
     return 0;
 }
 
@@ -87,16 +87,16 @@ void register_result(Message msg) {
     } else {
         register_operation(msg, CLOSD);
 
-        //pthread_mutex_lock(&closd_mutex);
+        // pthread_mutex_lock(&closd_mutex);
         is_closd = 1;
-        //pthread_mutex_unlock(&closd_mutex);
+        // pthread_mutex_unlock(&closd_mutex);
     }
 }
 
 int get_result(char* private_pipe, Message* msg) {
     int ret = 0, sl;
     int fd;
-    while((fd = open(private_pipe, O_RDONLY | O_NONBLOCK)) == -1 && get_remaining_time() > 0){} 
+    while ((fd = open(private_pipe, O_RDONLY | O_NONBLOCK)) == -1 && get_remaining_time() > 0) {}
 
     fd_set rfds;
     FD_ZERO(&rfds);
@@ -110,7 +110,7 @@ int get_result(char* private_pipe, Message* msg) {
         ret = 1;
     } else if (sl > 0) {    // rfds has something to be read
         if (read(fd, msg, sizeof(*msg)) < 0) {
-            //perror("read");
+            // perror("read");
             ret = 1;
         } else {
             register_result(*msg);
@@ -128,14 +128,14 @@ int request_setup(char* private_pipe, Message* msg) {
     snprintf(private_pipe, 100, "/tmp/%i.%lu", getpid(), pthread_self());
 
     if (mkfifo(private_pipe, 0666) != 0) {
-        //perror("mkfifo");
+        // perror("mkfifo");
         return 1;
     }
 
-    //pthread_mutex_lock(&g_rid_mutex);
+    // pthread_mutex_lock(&g_rid_mutex);
     msg->rid = global_rid;
     global_rid++;
-    //pthread_mutex_unlock(&g_rid_mutex);
+    // pthread_mutex_unlock(&g_rid_mutex);
     msg->pid = getpid();
     msg->tid = pthread_self();
 
@@ -170,15 +170,15 @@ int main(int argc, char* argv[]) {
 
     time(&startTime);
 
-    while((public_pipe_fd = open(public_pipe, O_WRONLY)) == -1 && get_remaining_time() > 0){} // does the magic for server closure
-
-    int creationSleep = (rand() % (9  - 1 + 1)) + 1;
+    while ((public_pipe_fd = open(public_pipe, O_WRONLY)) == -1 && get_remaining_time() > 0) {}  // does the magic for server closure
+    unsigned r = (unsigned) time(NULL);
+    int creationSleep = (rand_r(&r) % (9  - 1 + 1)) + 1;
     pthread_t* pid = (pthread_t*) malloc(sizeof(pthread_t));
-    while(1) {
-        //pthread_mutex_lock(&closd_mutex);
-        if (get_remaining_time() == 0 || is_closd) 
+    while (1) {
+        // pthread_mutex_lock(&closd_mutex);
+        if (get_remaining_time() == 0 || is_closd)
             break;
-        //pthread_mutex_unlock(&closd_mutex);
+        // pthread_mutex_unlock(&closd_mutex);
 
         usleep(creationSleep * 10000);
 
@@ -191,8 +191,8 @@ int main(int argc, char* argv[]) {
     free(pid);
 
     close(public_pipe_fd);
-    
-    pthread_exit(NULL); // -> onto something, not sure
-    
-    //return 0;
+
+    pthread_exit(NULL);  // -> onto something, not sure
+
+    // return 0;
 }
