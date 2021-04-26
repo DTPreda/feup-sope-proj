@@ -69,7 +69,7 @@ int make_request(Message* msg){
         return 1;
     } else if (sl > 0) {        
         if(write(public_pipe_fd, msg, sizeof(*msg)) == -1) {
-            perror("write");
+            //perror("write");
             return 1;
         } 
         register_operation(*msg, IWANT);
@@ -96,7 +96,7 @@ void register_result(Message msg) {
 int get_result(char* private_pipe, Message* msg) {
     int ret = 0, sl;
     int fd;
-    while((fd = open(private_pipe, O_RDONLY)) == -1 && get_remaining_time() > 0){} 
+    while((fd = open(private_pipe, O_RDONLY | O_NONBLOCK)) == -1 && get_remaining_time() > 0){} 
 
     fd_set rfds;
     FD_ZERO(&rfds);
@@ -110,7 +110,7 @@ int get_result(char* private_pipe, Message* msg) {
         ret = 1;
     } else if (sl > 0) {    // rfds has something to be read
         if (read(fd, msg, sizeof(*msg)) < 0) {
-            perror("read");
+            //perror("read");
             ret = 1;
         } else {
             register_result(*msg);
@@ -128,7 +128,7 @@ int request_setup(char* private_pipe, Message* msg) {
     snprintf(private_pipe, 100, "/tmp/%i.%lu", getpid(), pthread_self());
 
     if (mkfifo(private_pipe, 0666) != 0) {
-        perror("mkfifo");
+        //perror("mkfifo");
         return 1;
     }
 
@@ -170,7 +170,7 @@ int main(int argc, char* argv[]) {
 
     time(&startTime);
 
-    while((public_pipe_fd = open(public_pipe, O_WRONLY | O_NONBLOCK)) == -1 && get_remaining_time() > 0){} // does the magic for server closure
+    while((public_pipe_fd = open(public_pipe, O_WRONLY)) == -1 && get_remaining_time() > 0){} // does the magic for server closure
 
     int creationSleep = (rand() % (9  - 1 + 1)) + 1;
     pthread_t* pid = (pthread_t*) malloc(sizeof(pthread_t));
@@ -192,7 +192,7 @@ int main(int argc, char* argv[]) {
 
     close(public_pipe_fd);
     
-    //pthread_exit(NULL); -> onto something, not sure
+    pthread_exit(NULL); // -> onto something, not sure
     
-    return 0;
+    //return 0;
 }
