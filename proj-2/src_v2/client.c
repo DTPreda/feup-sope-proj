@@ -65,7 +65,7 @@ int make_request(Message* msg){
     tv.tv_usec = 0;
     
     if((sl = select(public_pipe_fd + 1, NULL, &wfds, NULL, &tv)) == -1){
-        perror("select");
+        //perror("select");
         return 1;
     } else if (sl > 0) {        
         if(write(public_pipe_fd, msg, sizeof(*msg)) == -1) {
@@ -106,7 +106,7 @@ int get_result(char* private_pipe, Message* msg) {
     tv.tv_sec = get_remaining_time();
     tv.tv_usec = 0;
     if ((sl = select(fd + 1, &rfds, NULL, NULL, &tv)) == -1) {
-        perror("select");
+        //perror("select");
         ret = 1;
     } else if (sl > 0) {    // rfds has something to be read
         if (read(fd, msg, sizeof(*msg)) < 0) {
@@ -158,11 +158,15 @@ void *request(void* argument) {
         get_result(private_pipe, &msg);
     }
 
-    if (remove(private_pipe) != 0) {
-        perror("remove");
+    if (unlink(private_pipe) != 0) {
+        perror("unlink");
     }
 
     return NULL;
+}
+
+void close_public_fifo(){
+    close(public_pipe_fd);
 }
 
 int main(int argc, char* argv[]) {
@@ -180,7 +184,7 @@ int main(int argc, char* argv[]) {
             break;
         //pthread_mutex_unlock(&closd_mutex);
 
-        usleep(creationSleep * 10000);
+        usleep(creationSleep * 1000);
 
         pthread_attr_t attr;
         pthread_attr_init(&attr);
@@ -190,7 +194,9 @@ int main(int argc, char* argv[]) {
 
     free(pid);
 
-    close(public_pipe_fd);
+    //close(public_pipe_fd);
+
+    atexit(close_public_fifo);
     
     pthread_exit(NULL); // -> onto something, not sure
     
