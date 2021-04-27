@@ -1,4 +1,4 @@
-#include "./client.h"
+#include "proj-2/src_v2/client.h"
 
 int inputTime;
 time_t startTime;
@@ -106,7 +106,7 @@ int get_result(char* private_pipe, Message* msg) {
     tv.tv_sec = get_remaining_time();
     tv.tv_usec = 0;
     if ((sl = select(fd + 1, &rfds, NULL, NULL, &tv)) == -1) {
-        perror("select");
+        is_closd = 1;
         ret = 1;
     } else if (sl > 0) {    // rfds has something to be read
         if (read(fd, msg, sizeof(*msg)) < 0) {
@@ -143,7 +143,6 @@ int request_setup(char* private_pipe, Message* msg) {
     unsigned r = (unsigned) pthread_self();
     int num = (rand_r(&r) % (upper - lower + 1)) + lower;
     msg->tskload = num;
-
     msg->tskres = -1;
 
     return 0;
@@ -172,7 +171,7 @@ int main(int argc, char* argv[]) {
 
     while ((public_pipe_fd = open(public_pipe, O_WRONLY)) == -1 && get_remaining_time() > 0) {}  // does the magic for server closure
     unsigned r = (unsigned) time(NULL);
-    int creationSleep = (rand_r(&r) % (9  - 1 + 1)) + 1;
+    int creationSleep = (rand_r(&r) % 9) + 1;
     pthread_t* pid = (pthread_t*) malloc(sizeof(pthread_t));
     while (1) {
         // pthread_mutex_lock(&closd_mutex);

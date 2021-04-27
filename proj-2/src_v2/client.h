@@ -1,3 +1,5 @@
+#ifndef PROJ_2_SRC_V2_CLIENT_H_
+#define PROJ_2_SRC_V2_CLIENT_H_
 #include <time.h>
 #include <fcntl.h>
 #include <stdio.h>
@@ -8,7 +10,7 @@
 #include <pthread.h>
 #include <sys/stat.h>
 #include <sys/time.h>
-#include "common.h"
+#include "./common.h"
 
 #define IWANT 0
 #define GOTRS 1
@@ -23,3 +25,5 @@ void register_result(Message msg);
 int get_result(char* private_pipe, Message* msg);
 int request_setup(char* private_pipe, Message* msg);
 void *request(void* argument);
+
+#endif  // PROJ_2_SRC_V2_CLIENT_H_
