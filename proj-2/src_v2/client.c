@@ -1,4 +1,4 @@
-#include "proj-2/src_v2/client.h"
+#include "./client.h"
 
 int inputTime;
 time_t startTime;
