@@ -69,12 +69,10 @@ int make_request(Message* msg) {
         return 1;
     } else if (sl > 0) {
         if (write(public_pipe_fd, msg, sizeof(*msg)) == -1) {
-            // perror("write");
             return 1;
         }
         register_operation(*msg, IWANT);
     } else if (sl == 0) {  // timeout
-        // register_operation(*msg, GAVUP);
         return 1;
     }
 
@@ -86,10 +84,7 @@ void register_result(Message msg) {
        register_operation(msg, GOTRS);
     } else {
         register_operation(msg, CLOSD);
-
-        // pthread_mutex_lock(&closd_mutex);
         is_closd = 1;
-        // pthread_mutex_unlock(&closd_mutex);
     }
 }
 
@@ -106,11 +101,9 @@ int get_result(char* private_pipe, Message* msg) {
     tv.tv_sec = get_remaining_time();
     tv.tv_usec = 0;
     if ((sl = select(fd + 1, &rfds, NULL, NULL, &tv)) == -1) {
-        //perror("select");
         ret = 1;
     } else if (sl > 0) {    // rfds has something to be read
         if (read(fd, msg, sizeof(*msg)) < 0) {
-            // perror("read");
             ret = 1;
         } else {
             register_result(*msg);
@@ -128,14 +121,11 @@ int request_setup(char* private_pipe, Message* msg) {
     snprintf(private_pipe, 100, "/tmp/%i.%lu", getpid(), pthread_self());
 
     if (mkfifo(private_pipe, 0666) != 0) {
-        // perror("mkfifo");
         return 1;
     }
 
-    // pthread_mutex_lock(&g_rid_mutex);
     msg->rid = global_rid;
     global_rid++;
-    // pthread_mutex_unlock(&g_rid_mutex);
     msg->pid = getpid();
     msg->tid = pthread_self();
 
@@ -164,7 +154,7 @@ void *request(void* argument) {
     return NULL;
 }
 
-void close_public_fifo(){
+void close_public_fifo() {
     close(public_pipe_fd);
 }
 
@@ -178,10 +168,8 @@ int main(int argc, char* argv[]) {
     int creationSleep = (rand_r(&r) % 9) + 1;
     pthread_t* pid = (pthread_t*) malloc(sizeof(pthread_t));
     while (1) {
-        // pthread_mutex_lock(&closd_mutex);
         if (get_remaining_time() == 0 || is_closd)
             break;
-        // pthread_mutex_unlock(&closd_mutex);
 
         usleep(creationSleep * 1000);
 
@@ -193,11 +181,7 @@ int main(int argc, char* argv[]) {
 
     free(pid);
 
-    //close(public_pipe_fd);
-
     atexit(close_public_fifo);
-    
-    pthread_exit(NULL); // -> onto something, not sure
-    
-    //return 0;
+
+    pthread_exit(NULL);  // -> onto something, not sure
 }
