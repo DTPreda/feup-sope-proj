@@ -1,9 +1,9 @@
 all: s c
 
-s: server.o lib.o delay.c delay.h
+s: server.o lib.o delay.c headers/delay.h
 	gcc -Wall -DDELAY=0 -o s delay.c lib.o server.o -pthread
 
-c: client.c common.h
+c: client.c headers/common/common.h
 	gcc -Wall -o c client.c -pthread
 
 # server.o: server.c common.h
