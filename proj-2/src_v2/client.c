@@ -27,6 +27,10 @@ int parse_arguments(int argc, char* argv[]) {
     return 0;
 }
 
+void close_public_fifo() {
+    close(public_pipe_fd);
+}
+
 void register_operation(Message msg, int type) {
     time_t t = time(NULL);
     if (t == -1) return;
@@ -51,6 +55,15 @@ void register_operation(Message msg, int type) {
     }
     fprintf(stdout, "\n");
     pthread_mutex_unlock(&output_mutex);
+}
+
+void register_result(Message msg) {
+    if (msg.tskres != -1) {
+       register_operation(msg, GOTRS);
+    } else {
+        register_operation(msg, CLOSD);
+        is_closd = 1;
+    }
 }
 
 int make_request(Message* msg) {
@@ -79,14 +92,6 @@ int make_request(Message* msg) {
     return 0;
 }
 
-void register_result(Message msg) {
-    if (msg.tskres != -1) {
-       register_operation(msg, GOTRS);
-    } else {
-        register_operation(msg, CLOSD);
-        is_closd = 1;
-    }
-}
 
 int get_result(char* private_pipe, Message* msg) {
     int ret = 0, sl;
@@ -152,10 +157,6 @@ void *request(void* argument) {
     }
 
     return NULL;
-}
-
-void close_public_fifo() {
-    close(public_pipe_fd);
 }
 
 int main(int argc, char* argv[]) {

@@ -50,7 +50,25 @@ The application **must comply** with the following communication protocols:
 
 ## Code structure
 
-TODO
+Code separation was heavily taken into account, as to follow the Single Responsibility Principle. Each module serves a distinct purpose, and here, it was decided to keep them in the same file due to the reduced size of each one, as well as the similarities between the objectives of each function. As such, the code can be broken down into 3 major components, which are:
+
+- main - The main function responsible for the creation and termination of each thread.
+
+- Requests - The set of functions responsible for creating the request, sending it and waiting for its response. The main functions belonging to this area are the ```request, request_setup, make_request and get_result ```
+
+- Utilities - The set of utilitarian functions responsible for all the other tasks, such as registering the operations in stdout, verifying if the arguments are valid or finding the time passed since the start of execution.
+
+The flow of the program is then as follows:
+
+- First, the main function checks for the correct arguments and argument list. If anything is invalid, the program terminates here.
+
+- The program starts creating the threads at a steady rate, each of them calling the ```request``` function.
+
+- Each thread then creates a request and sends it to the server through the public FIFO created.
+
+- After the server issues a response through the private FIFO belonging to each thread, the response is registerd and cleanup is done, removing the pipe and terminating the thread's job (but not eliminating the thread yet)
+
+- When time is up, or the server shuts down, the remaining cleanup is done, freeing all memory left and, if open, the public FIFO is closed. Also, every thread is terminated at the end. At last, the program terminates.
 
 ## Implementation details
 
