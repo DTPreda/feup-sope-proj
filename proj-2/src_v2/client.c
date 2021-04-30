@@ -2,10 +2,14 @@
 
 int inputTime;
 time_t startTime;
+
 char* public_pipe;
 int public_pipe_fd;
+
 int global_rid = 0;
+
 volatile int is_closd = 0;
+
 pthread_mutex_t output_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 time_t get_remaining_time() {
@@ -78,14 +82,13 @@ int make_request(Message* msg) {
     tv.tv_usec = 0;
 
     if ((sl = select(public_pipe_fd + 1, NULL, &wfds, NULL, &tv)) == -1) {
-        perror("select");
         return 1;
     } else if (sl > 0) {
         if (write(public_pipe_fd, msg, sizeof(*msg)) == -1) {
             return 1;
         }
         register_operation(*msg, IWANT);
-    } else if (sl == 0) {  // timeout
+    } else if (sl == 0) {
         return 1;
     }
 
@@ -107,13 +110,13 @@ int get_result(char* private_pipe, Message* msg) {
     tv.tv_usec = 0;
     if ((sl = select(fd + 1, &rfds, NULL, NULL, &tv)) == -1) {
         ret = 1;
-    } else if (sl > 0) {    // rfds has something to be read
+    } else if (sl > 0) {
         if (read(fd, msg, sizeof(*msg)) < 0) {
             ret = 1;
         } else {
             register_result(*msg);
         }
-    } else if (sl == 0) {    // timeout
+    } else if (sl == 0) {
         register_operation(*msg, GAVUP);
     }
 
@@ -164,7 +167,7 @@ int main(int argc, char* argv[]) {
 
     time(&startTime);
 
-    while ((public_pipe_fd = open(public_pipe, O_WRONLY)) == -1 && get_remaining_time() > 0) {}  // does the magic for server closure
+    while ((public_pipe_fd = open(public_pipe, O_WRONLY)) == -1 && get_remaining_time() > 0) {}
     unsigned r = (unsigned) time(NULL);
     int creationSleep = (rand_r(&r) % 9) + 1;
     pthread_t* pid = (pthread_t*) malloc(sizeof(pthread_t));
@@ -185,6 +188,6 @@ int main(int argc, char* argv[]) {
 
     atexit(close_public_fifo);
 
-    pthread_exit(NULL);  // -> onto something, not sure
+    pthread_exit(NULL);
     return 0;
 }
