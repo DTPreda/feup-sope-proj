@@ -52,7 +52,7 @@ The application **must comply** with the following communication protocols:
 
 Code separation was heavily taken into account, as to follow the Single Responsibility Principle. Each module serves a distinct purpose, and here, it was decided to keep them in the same file due to the reduced size of each one, as well as the similarities between the objectives of each function. As such, the code can be broken down into 3 major components, which are:
 
-- main - The main function responsible for the creation and termination of each thread.
+- main - The main function responsible for the creation of each thread.
 
 - Requests - The set of functions responsible for creating the request, sending it and waiting for its response. The main functions belonging to this area are the ```request, request_setup, make_request and get_result ```
 
@@ -66,13 +66,20 @@ The flow of the program is then as follows:
 
 - Each thread then creates a request and sends it to the server through the public FIFO created.
 
-- After the server issues a response through the private FIFO belonging to each thread, the response is registerd and cleanup is done, removing the pipe and terminating the thread's job (but not eliminating the thread yet)
+- After the server issues a response through the private FIFO belonging to each thread, the response is registerd and cleanup is done, removing the pipe and terminating the thread's job
 
 - When time is up, or the server shuts down, the remaining cleanup is done, freeing all memory left and, if open, the public FIFO is closed. Also, every thread is terminated at the end. At last, the program terminates.
 
 ## Implementation details
 
-TODO
+The client program can be divide in two parts: the main client thread and the requesting client threads. The main client thread creates requesting client threads at a random frequency and the requesting client threads are responsible are responsible of client-server communication. In order to do that, each requesting client threads creates a private fifo in the form of "/tmp/pid.tid" and a message, which tells the Server what the Client requests. To create such message, a random number between 1 and 9 is created in order to specify the task priority. Each request has it specific id, which is obtained through a global variable, incremented by 1 upon each request.
+
+To make a request, Client sends a message through the public pipe created by the Server, through the write() system call. Alongisde write(), the select() function was used. We considered the usage of this function to control the file descriptors of the public pipe and to control the execution time of the requesting threads, given that they should not make requests if their running time passes the time factor introduced on the arguments of the program. To get the response of each task, the same approach was used, but instead of writing to the public fifo, we read the private fifo created in the beginning of each requesting thread.
+
+After the message is received or the running time reaches to limit, the unlink() system call is used on the private pipe.
+
+To avoid limitations, the requesting threads are created in detached mode. By not having to join later, we do not need to keep each thread's ID, as they will naturally die after their task is completed. Thus, we do not have to hardcode a fixed number of threads, and we can recycle threads.
+The main thread is exited upon finishing thread creation. The program only ends when the last active thread dies, after which the public fifo file descriptor is closed, so the server can end correctly as well.
 
 ### Self evaluation
 
