@@ -165,10 +165,17 @@ int main(int argc, char* argv[]) {
     time(&startTime);
 
     while ((public_pipe_fd = open(public_pipe, O_WRONLY)) == -1 && get_remaining_time() > 0) {}  // does the magic for server closure
-    unsigned r = (unsigned) time(NULL);
-    int creationSleep = (rand_r(&r) % 9) + 1;
+    
+    if (get_remaining_time() == 0) 
+        return 1;
+    
+    unsigned seed = (unsigned) time(NULL);
+    int creationSleep = (rand_r(&seed) % 9) + 1;
     pthread_t* pid = (pthread_t*) malloc(sizeof(pthread_t));
+    
     pthread_attr_t attr;
+    pthread_attr_init(&attr);
+    
     while (1) {
         if (get_remaining_time() == 0 || is_closd)
             break;
@@ -178,7 +185,7 @@ int main(int argc, char* argv[]) {
         pthread_attr_init(&attr);
         pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
         pthread_create(pid, &attr, request, NULL);
-    }
+    } 
 
     free(pid);
     pthread_attr_destroy(&attr);
