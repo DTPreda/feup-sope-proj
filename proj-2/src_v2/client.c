@@ -1,4 +1,4 @@
-#include "./client.h"
+#include "headers/client.h"
 
 int inputTime;
 time_t startTime;
@@ -123,7 +123,7 @@ int get_result(char* private_pipe, Message* msg) {
 }
 
 int request_setup(char* private_pipe, Message* msg) {
-    snprintf(private_pipe, 100, "/tmp/%i.%lu", getpid(), pthread_self());
+    snprintf(private_pipe, 100 * sizeof(char), "/tmp/%i.%lu", getpid(), pthread_self());
 
     if (mkfifo(private_pipe, 0666) != 0) {
         return 1;
@@ -185,4 +185,5 @@ int main(int argc, char* argv[]) {
     atexit(close_public_fifo);
 
     pthread_exit(NULL);  // -> onto something, not sure
+    return 0;
 }
