@@ -17,10 +17,36 @@
 #define CLOSD 2
 #define GAVUP 3
 
+/**
+ * Gets the remaining time that program can run
+ * @return time_t with the remaining time 
+ */ 
 time_t get_remaining_time();
+
+/**
+ * Parse arguments introduced to run the program
+ * @return 1 if wrong arguments, 0 otherwise
+ */ 
 int parse_arguments(int argc, char* argv[]);
+
+/**
+ * Register an operation to standard output. 
+ * @param Message message that we want to register 
+ * @param type type of the message that we want to register (IWANT, GOTRS, CLOSD, GAVUP)
+ */ 
 void register_operation(Message msg, int type);
+
+/**
+ * Makes a request to the Servidor
+ * @param Message request to be sent to Servidor
+ * @return 1 if could not send the request, 0 otherwise
+ */ 
 int make_request(Message* msg);
+
+/**
+ * Registers the result of a received Message
+ * @param Message message to be registered
+ */ 
 void register_result(Message msg);
 /**
  * Reads the result sent by the server for a previous successful request.
