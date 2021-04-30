@@ -168,19 +168,20 @@ int main(int argc, char* argv[]) {
     unsigned r = (unsigned) time(NULL);
     int creationSleep = (rand_r(&r) % 9) + 1;
     pthread_t* pid = (pthread_t*) malloc(sizeof(pthread_t));
+    pthread_attr_t attr;
     while (1) {
         if (get_remaining_time() == 0 || is_closd)
             break;
 
         usleep(creationSleep * 1000);
 
-        pthread_attr_t attr;
         pthread_attr_init(&attr);
         pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
         pthread_create(pid, &attr, request, NULL);
     }
 
     free(pid);
+    pthread_attr_destroy(&attr);
 
     atexit(close_public_fifo);
 

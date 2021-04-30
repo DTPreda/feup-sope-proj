@@ -1,7 +1,7 @@
 all: s c
 
 s: server.o lib.o delay.c headers/delay.h
-	gcc -Wall -DDELAY=0 -o s delay.c lib.o server.o -pthread
+	gcc -Wall -DDELAY=100 -o s delay.c lib.o server.o -pthread
 
 c: client.c headers/common/common.h
 	gcc -Wall -o c client.c -pthread
