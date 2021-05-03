@@ -172,6 +172,8 @@ int main(int argc, char* argv[]) {
     if (get_remaining_time() == 0) 
         return 1;
     
+    signal(SIGPIPE, SIG_IGN);
+
     unsigned seed = (unsigned) time(NULL);
     int creationSleep = (rand_r(&seed) % 9) + 1;
     pthread_t* pid = (pthread_t*) malloc(sizeof(pthread_t));
