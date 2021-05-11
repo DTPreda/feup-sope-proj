@@ -1,4 +1,4 @@
-#ifndef PROJ_2_SRC_V2_HEADERS_DELAY_H_
-#define PROJ_2_SRC_V2_HEADERS_DELAY_H_ 1
+#ifndef _DELAY_H
+#define _DELAY_H 1
 extern int delay;
-#endif  // PROJ_2_SRC_V2_HEADERS_DELAY_H_
+#endif // _DELAY_H

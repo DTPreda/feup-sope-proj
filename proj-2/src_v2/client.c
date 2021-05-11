@@ -185,7 +185,7 @@ int main(int argc, char* argv[]) {
         if (get_remaining_time() == 0 || is_closd)
             break;
 
-        usleep(creationSleep * 1000);
+        usleep(creationSleep * 100);
 
         pthread_attr_init(&attr);
         pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);

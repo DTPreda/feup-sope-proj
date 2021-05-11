@@ -9,7 +9,7 @@
 #include <semaphore.h>
 #include "headers/common/common.h"
 #include "queue.h"
-#include "lib.h"
+#include "headers/lib.h"
 
 #define RECVD 0
 #define TSKEX 1

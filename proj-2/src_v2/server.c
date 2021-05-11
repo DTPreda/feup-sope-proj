@@ -15,6 +15,7 @@ pthread_mutex_t queue_access = PTHREAD_MUTEX_INITIALIZER;
 
 sem_t empty;
 sem_t full;
+sem_t curr_n_threads;
 
 int get_remaining_time(){
     time_t current_time = time(NULL);
@@ -53,7 +54,6 @@ void register_operation(Message* msg, int type) {
 }
 
 int parse_arguments(int argc, char* argv[]){
-    //./s = 0, -t = 1, seconds = 2, -l = 3, buffer_size = 4, fifoname = 5 or 3
     if (argc != 4 && argc != 6) return 1;
     if (argc == 6) {
         if(strncmp(argv[3], "-l", 2) != 0) return 1;
@@ -84,7 +84,7 @@ int set_server_up(message_queue* q, int bufsz, char* fifo_name) {
         return 1;
     }
 
-    if (sem_init(&empty, 0, q->size) != 0 || sem_init(&full, 0, 0)) {
+    if (sem_init(&empty, 0, q->size) != 0 || sem_init(&full, 0, 0) != 0 || sem_init(&curr_n_threads, 0, 0) != 0) {
         perror("sem_init");
         return 1;
     }
@@ -127,22 +127,25 @@ int get_request(Message* msg){
 }
 
 void free_resources() {
-    close(public_fifo_fd);
-
     sem_destroy(&empty);
     sem_destroy(&full);
+    sem_destroy(&curr_n_threads);
 
     pthread_mutex_destroy(&output_mutex);
     pthread_mutex_destroy(&queue_access);
     
-    if (unlink(public_fifo) != 0) {
-        perror("unlink");
-    }
-    
     queue_destroy(&buffer);
 }
 
-void insert_item(Message* msg, message_queue* buffer){
+void close_fifo() {
+    close(public_fifo_fd);
+
+    if (unlink(public_fifo) != 0) {
+        perror("unlink");
+    }
+}
+
+void insert_item(Message* msg, message_queue* buffer) {
     if (sem_wait(&empty) != 0) {
         perror("sem_wait");
         return;
@@ -159,19 +162,23 @@ void insert_item(Message* msg, message_queue* buffer){
 }
 
 void *attend_request(void* argument) {
+    sem_post(&curr_n_threads);
     Message* msg = (Message*) argument;
     
-    if(get_remaining_time() != 0){
-        get_result(msg);
+    if (get_remaining_time() != 0) {
+        msg->tskres = task(msg->tskload);
         register_operation(msg, TSKEX);
     }
 
     insert_item(msg, &buffer);
+    free(msg);
+
+    sem_trywait(&curr_n_threads);
 
     return NULL;
 }
 
-void send_result(Message* msg){
+void send_result(Message* msg) {
     char private_fifo[100];
     snprintf(private_fifo, 100, "/tmp/%i.%lu", msg->pid, (unsigned long) msg->tid);
 
@@ -182,7 +189,7 @@ void send_result(Message* msg){
         if (write(fd, msg, sizeof(Message)) == -1) {
             register_operation(msg, FAILD);
         } else {
-            if(msg->tskres == -1){
+            if (msg->tskres == -1) {
                 register_operation(msg, TOOLATE);
             } else {
                 register_operation(msg, TSKDN);
@@ -195,9 +202,7 @@ void send_result(Message* msg){
 
 void *consumer_thread(void* argument){
     Message msg;
-    int val;
-    sem_getvalue(&full, &val);
-    while(1){
+    while (1) {
         if (sem_wait(&full) != 0) {
             continue;
         }
@@ -210,34 +215,50 @@ void *consumer_thread(void* argument){
             perror("sem_post");
         }
 
-        if(msg.tskres == POISON_PILL) {
+        if (msg.tskres == POISON_PILL) {
             //printf("Found poison pill\n");
             break;
         }
         
         send_result(&msg);
     }
-    sleep(0.25);
-    while(!queue_is_empty(&buffer)){
+    int val;
+    sem_getvalue(&curr_n_threads, &val);
+    while (!queue_is_empty(&buffer) || val != 0) {
+
+
+        if (sem_wait(&full) != 0) {
+            continue;
+        }
+
+        pthread_mutex_lock(&queue_access);
         queue_pop(&buffer, &msg);
+        pthread_mutex_unlock(&queue_access);
+
+        if (sem_post(&empty) != 0) {
+            perror("sem_post");
+        }
+        
         send_result(&msg);
+        
+        sem_getvalue(&curr_n_threads, &val);
     }
     fprintf(stdout, "Consumer thread terminating.\n");
     return NULL;
 }
 
-int set_up_consumer_thread(pthread_t* pid, pthread_attr_t* attr){
+int set_up_consumer_thread(pthread_t* pid, pthread_attr_t* attr) {
     pthread_attr_init(attr);
     pthread_attr_setdetachstate(attr, PTHREAD_CREATE_DETACHED);
 
-    if(pthread_create(pid, attr, consumer_thread, NULL) != 0){
+    if (pthread_create(pid, attr, consumer_thread, NULL) != 0) {
         return 1;
     }
 
     return 0;
 }
 
-void poison_pill(){
+void poison_pill() {
     Message msg;
     msg.tskres = POISON_PILL;
 
@@ -268,24 +289,24 @@ int main(int argc, char* argv[]) {
 
     pthread_t pid;
     pthread_attr_t attr;
-    Message msg;
 
-    if (set_up_consumer_thread(&pid, &attr) != 0){
+    if (set_up_consumer_thread(&pid, &attr) != 0) {
         fprintf(stdout, "Unable to set up consumer thread.\n");
         return 1;
     }
-
     while (get_remaining_time() != 0) {
-        if(get_request(&msg) != 0){
+        Message* msg = (Message*) malloc(sizeof(Message));
+        if (get_request(msg) != 0) {
             continue;
         }
-        
         pthread_attr_init(&attr);
         pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-        pthread_create(&pid, &attr, attend_request, (void*) &msg);
+        pthread_create(&pid, &attr, attend_request, (void*) msg);
     }
 
     pthread_attr_destroy(&attr);
+
+    close_fifo();
 
     atexit(free_resources);
 

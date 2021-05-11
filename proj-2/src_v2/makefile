@@ -9,11 +9,9 @@ c: client.c headers/common/common.h
 # server.o: server.c common.h
 # 	gcc -Wall -c -o server.o server.c
 
-# lib.o: lib.c lib.h
-# 	gcc -Wall -c -o lib.o lib.c
 
-s: server.c server.h lib.c lib.h headers/common/common.h queue.c queue.h
-	gcc -Wall -pthread -lpthread -lrt queue.c server.c lib.c -o s
+s: server.c server.h lib.c headers/lib.h headers/common/common.h queue.c queue.h headers/delay.h delay.c
+	gcc -Wall -DDELAY=100 -pthread -lpthread -lrt queue.c server.c lib.c delay.c -o s
 
 clean:
 	rm -f s c server
