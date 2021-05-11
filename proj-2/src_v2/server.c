@@ -106,7 +106,7 @@ int get_request(Message* msg){
     tv.tv_sec = get_remaining_time();
     tv.tv_usec = 0;
 
-    int sl = -1;
+    int sl;
     if((sl = select(public_fifo_fd + 1, &rfds, NULL, NULL, &tv)) == -1) {
         perror("select");
         return 1;
