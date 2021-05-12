@@ -157,7 +157,7 @@ void close_fifo(pthread_t* tid, pthread_attr_t* attr) {
 
     while (1) {
         Message* msg = (Message*) malloc(sizeof(Message));
-        int r;
+        int r = -1;
         if((r = get_request_non_timeout(msg)) == 2) {
             free(msg);
             break;
