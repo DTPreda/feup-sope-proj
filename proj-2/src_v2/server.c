@@ -89,7 +89,7 @@ int set_server_up(message_queue* q, int bufsz, char* fifo_name) {
         return 1;
     }
 
-    if ((public_fifo_fd = open(fifo_name, O_RDONLY)) == -1) {
+    if ((public_fifo_fd = open(fifo_name, O_RDONLY | O_NONBLOCK)) == -1) {
         perror("open");
         return 1;
     }
@@ -97,7 +97,7 @@ int set_server_up(message_queue* q, int bufsz, char* fifo_name) {
     return 0;
 }
 
-int get_request(Message* msg){
+int get_request(Message* msg) {
     fd_set rfds;
     FD_ZERO(&rfds);
     FD_SET(public_fifo_fd, &rfds);
@@ -116,12 +116,25 @@ int get_request(Message* msg){
             perror("read");
             return 1;
         } else if (r == 0){
-            return 1;
+            return 2;
         }
         register_operation(msg, RECVD);
     } else if (sl == 0) {
         return 1;
     }
+
+    return 0;
+}
+
+int get_request_non_timeout(Message* msg){
+    int r = read(public_fifo_fd, msg, sizeof(Message));
+    if (r == -1) {
+        return 1;
+    } else if (r == 0) {
+        return 2;
+    }
+
+    register_operation(msg, RECVD);
 
     return 0;
 }
@@ -137,12 +150,24 @@ void free_resources() {
     queue_destroy(&buffer);
 }
 
-void close_fifo() {
-    close(public_fifo_fd);
-
+void close_fifo(pthread_t* tid, pthread_attr_t* attr) {
     if (unlink(public_fifo) != 0) {
         perror("unlink");
     }
+    
+    while (1) {
+        Message* msg = (Message*) malloc(sizeof(Message));
+        int r;
+        if((r = get_request_non_timeout(msg)) == 2) {
+            break;
+        } else if (r != 0) continue;
+
+        pthread_attr_init(attr);
+        pthread_attr_setdetachstate(attr, PTHREAD_CREATE_DETACHED);
+        pthread_create(tid, attr, attend_request, (void*) msg);
+    }
+
+    close(public_fifo_fd);
 }
 
 void insert_item(Message* msg, message_queue* buffer) {
@@ -200,7 +225,7 @@ void send_result(Message* msg) {
     close(fd);
 }
 
-void *consumer_thread(void* argument){
+void *consumer_thread(void* argument) {
     Message msg;
     while (1) {
         if (sem_wait(&full) != 0) {
@@ -272,6 +297,7 @@ void poison_pill() {
 }
 
 int main(int argc, char* argv[]) {
+
     if (parse_arguments(argc, argv) != 0) {
         fprintf(stdout, "Correct usage: s <-t nsecs> [-l bufsz] <fifoname>\n");
         return 1;
@@ -287,10 +313,10 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    pthread_t pid;
+    pthread_t tid;
     pthread_attr_t attr;
 
-    if (set_up_consumer_thread(&pid, &attr) != 0) {
+    if (set_up_consumer_thread(&tid, &attr) != 0) {
         fprintf(stdout, "Unable to set up consumer thread.\n");
         return 1;
     }
@@ -301,12 +327,12 @@ int main(int argc, char* argv[]) {
         }
         pthread_attr_init(&attr);
         pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-        pthread_create(&pid, &attr, attend_request, (void*) msg);
+        pthread_create(&tid, &attr, attend_request, (void*) msg);
     }
 
-    pthread_attr_destroy(&attr);
+    close_fifo(&tid, &attr);
 
-    close_fifo();
+    pthread_attr_destroy(&attr);
 
     atexit(free_resources);
 
