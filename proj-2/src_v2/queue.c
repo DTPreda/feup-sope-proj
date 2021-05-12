@@ -1,4 +1,4 @@
-#include "headers/queue.h"
+#include "headers/queue/queue.h"
 
 int queue_init(message_queue* q, int size) {
     q->arr = (Message*) malloc(sizeof(Message) * size);
