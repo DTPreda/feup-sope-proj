@@ -1,5 +1,5 @@
-#ifndef PROJ_2_SRC_V2_HEADERS_CLIENT_H_
-#define PROJ_2_SRC_V2_HEADERS_CLIENT_H_
+#ifndef HEADERS_CLIENT_H_
+#define HEADERS_CLIENT_H_
 #include <time.h>
 #include <fcntl.h>
 #include <stdio.h>
@@ -10,7 +10,7 @@
 #include <pthread.h>
 #include <sys/stat.h>
 #include <sys/time.h>
-#include "common/common.h"
+#include "queue/common/common.h"
 
 #define IWANT 0
 #define GOTRS 1
@@ -73,4 +73,4 @@ void *request(void* argument);
 */
 void close_public_fifo();
 
-#endif  // PROJ_2_SRC_V2_HEADERS_CLIENT_H_
+#endif  // HEADERS_CLIENT_H_

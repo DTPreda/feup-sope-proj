@@ -1,3 +1,5 @@
+#ifndef HEADERS_SERVER_H_
+#define HEADERS_SERVER_H_
 #include <stdio.h>
 #include <fcntl.h>
 #include <stdlib.h>
@@ -7,9 +9,9 @@
 #include <sys/time.h>
 #include <sys/stat.h>
 #include <semaphore.h>
-#include "headers/common/common.h"
-#include "queue.h"
-#include "headers/lib.h"
+#include "queue/common/common.h"
+#include "lib/lib.h"
+#include "queue/queue.h"
 
 #define RECVD 0
 #define TSKEX 1
@@ -32,3 +34,5 @@ void send_result(Message* msg);
 void *consumer_thread(void* argument);
 int set_up_consumer_thread(pthread_t* pid, pthread_attr_t* attr);
 void poison_pill();
+
+#endif  // HEADERS_SERVER_H_
