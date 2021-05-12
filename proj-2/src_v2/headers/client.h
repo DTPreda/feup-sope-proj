@@ -10,7 +10,7 @@
 #include <pthread.h>
 #include <sys/stat.h>
 #include <sys/time.h>
-#include "common/common.h"
+#include "queue/common/common.h"
 
 #define IWANT 0
 #define GOTRS 1

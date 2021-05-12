@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "headers/common/common.h"
+#include "common/common.h"
 
 typedef struct {
     Message* arr;

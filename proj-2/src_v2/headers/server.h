@@ -9,8 +9,8 @@
 #include <sys/time.h>
 #include <sys/stat.h>
 #include <semaphore.h>
-#include "headers/common/common.h"
-#include "headers/lib.h"
+#include "queue/common/common.h"
+#include "lib/lib.h"
 #include "queue/queue.h"
 
 #define RECVD 0

@@ -1,7 +1,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <pthread.h>
-#include "headers/lib.h"
+#include "headers/lib/lib.h"
 #include "headers/delay.h"
 
 int c = 0;  // JMC
