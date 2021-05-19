@@ -52,11 +52,20 @@ int parse_arguments(int argc, char* argv[]);
 int set_server_up(message_queue* q, int bufsz, char* fifo_name);
 
 /**
- * Reads a request from the public FIFO specified
+ * Reads a request from the public FIFO specified and checks if reached timeout
  * @param msg Variable used to hold the message received
  * @return 0 if successfull, 1 otherwise
  */ 
 int get_request(Message* msg);
+
+
+/**
+ * Reads a request from the public FIFO specified
+ * @param msg Variable used to hold the message received
+ * @return 0 if successful, 1 otherwise 
+ */ 
+int get_request_non_timeout(Message* msg);
+
 
 /**
  * Destroys all alocated resources to free up space
