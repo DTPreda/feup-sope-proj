@@ -93,6 +93,7 @@ Once again
 ## Server implementation details
 
 ! Mention queue structure built from scratch
+! Mention file structure for cpplint
 
 ### Self evaluation
 
