@@ -158,14 +158,14 @@ void close_fifo(pthread_t* tid, pthread_attr_t* attr) {
     while (1) {
         Message* msg = (Message*) malloc(sizeof(Message));
         int r = -1;
-        if ((r = get_request_non_timeout(msg)) == 2) {
+        if((r = get_request_non_timeout(msg)) == 2) {
             free(msg);
             break;
-        } else if (r != 0) {
+        } else if (r != 0){
             free(msg);
             continue;
-        }
-
+        } 
+            
 
         pthread_attr_init(attr);
         pthread_attr_setdetachstate(attr, PTHREAD_CREATE_DETACHED);
