@@ -64,14 +64,47 @@ int get_request(Message* msg);
 void free_resources();
 
 /**
- * Closes the public FIFO after a timeout, reading all the remaining 
+ * Closes the public FIFO after a timeout, executing all remaining messages
+ * @param tid Thread id of the final thread to run to execute remaining messages
+ * @param attr Struct of attributes to initialize the final thread
  */ 
 void close_fifo(pthread_t* tid, pthread_attr_t* attr);
+
+/**
+ * Inserts on of the messages in the message queue
+ * @param msg Message to be inserted
+ * @param buffer Queue to hold the message
+ */ 
 void insert_item(Message* msg, message_queue* buffer);
+
+/**
+ * Attends a client request, sendind the task to the library and saving the result
+ * @param argument arguments to be sent to the library
+ */ 
 void *attend_request(void* argument);
+
+/**
+ * Sends the addequate result of the task execution to the client
+ * @param msg Message which hold the result of execution
+ */ 
 void send_result(Message* msg);
+
+/**
+ * Consumer thread that reads messages from the queue and writes results to the standard output
+ * @param argument Arguments given to the thread to ensure correctness
+ */ 
 void *consumer_thread(void* argument);
+
+/**
+ * Initializes consumer thread with all of the correct attributes
+ * @param pid pid to create the consumer thread 
+ * @param attr Attributes passed to the thread to ensure correctness
+ */ 
 int set_up_consumer_thread(pthread_t* pid, pthread_attr_t* attr);
+
+/**
+ * Sends a poison pill to the queue, indicating that it must stop execution
+ */ 
 void poison_pill();
 
 #endif  // HEADERS_SERVER_H_
