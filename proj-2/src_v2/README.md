@@ -88,7 +88,17 @@ The main thread is exited upon finishing thread creation. The program only ends 
 
 ## Server code structure
 
-Once again
+Once again, all code was kept in the same file as all functions serve a similar purpose, and the file itself maintains a single responsibility (managing the
+server). With that said, each function has a distinct purpose, and modulatiry was taken heavily taken into account. The server code can be divided into a similar
+structure to that of the client. As such, there are these main sections:
+
+- main - A main function responsible for providing the overall flow of the program.
+
+- Request handling - Set of functions responsible for receiving requests, sending them to the library and storing the results. They are also the section that
+effectivelly communicates with the client.
+
+- Utility - The remaining utility functions, which serve as helpers to the Request handling, in tasks such as registering results to standard output, see if the
+time is up, inserting and retreiving items from the queue, etc.
 
 ## Server implementation details
 
