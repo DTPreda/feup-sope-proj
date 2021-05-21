@@ -77,7 +77,7 @@ The flow of the program is then as follows:
 
 ## Client implementation details
 
-The client program can be divide in two parts: the main client thread and the requesting client threads. The main client thread creates requesting client threads at a random frequency and the requesting client threads are responsible are responsible of client-server communication. In order to do that, each requesting client threads creates a private fifo in the form of "/tmp/pid.tid" and a message, which tells the Server what the Client requests. To create such message, a random number between 1 and 9 is created in order to specify the task priority. Each request has it specific id, which is obtained through a global variable, incremented by 1 upon each request.
+The client program can be divided in two parts: the main client thread and the requesting client threads. The main client thread creates requesting client threads at a random frequency and the requesting client threads are responsible are responsible of client-server communication. In order to do that, each requesting client threads creates a private fifo in the form of "/tmp/pid.tid" and a message, which tells the Server what the Client requests. To create such message, a random number between 1 and 9 is created in order to specify the task priority. Each request has it specific id, which is obtained through a global variable, incremented by 1 upon each request.
 
 To make a request, Client sends a message through the public pipe created by the Server, through the write() system call. Alongisde write(), the select() function was used. We considered the usage of this function to control the file descriptors of the public pipe and to control the execution time of the requesting threads, given that they should not make requests if their running time passes the time factor introduced on the arguments of the program. To get the response of each task, the same approach was used, but instead of writing to the public fifo, we read the private fifo created in the beginning of each requesting thread.
 
@@ -88,9 +88,9 @@ The main thread is exited upon finishing thread creation. The program only ends 
 
 ## Server code structure
 
-Once again, all code was kept in the same file as all functions serve a similar purpose, and the file itself maintains a single responsibility (managing the
-server). With that said, each function has a distinct purpose, and modulatiry was taken heavily taken into account. The server code can be divided into a similar
-structure to that of the client. As such, there are these main sections:
+To have a better organization of the code, the headers file path was changed so, in order to run the client and the lib provided by the teacher the "#includes" done in each respectively .c file must be changed to the correct path: "headers/queue/common/common.h" in the case of client, "headers/lib/lib.h" and "headers/delay.h" in the case of the lib.
+
+Like in the client code, all code was kept in the same file as all functions serve a similar purpose, and the file itself maintains a single responsibility (managing the server). With that said, each function has a distinct purpose, and modulatiry was taken heavily taken into account. The server code can be divided into a similar structure to that of the client. As such, there are these main sections:
 
 - main - A main function responsible for providing the overall flow of the program.
 
@@ -102,8 +102,15 @@ time is up, inserting and retreiving items from the queue, etc.
 
 ## Server implementation details
 
-! Mention queue structure built from scratch
-! Mention file structure for cpplint
+To store the messages received by the Client a queue structure was built, in which we store the messages received by order and get the responses to the tasks to them.
+
+The Server program can be divided in two main parts: the Consumer thread and the Producers threads.
+
+The objective of Producers threads is to execute the tasks sent by the main thread and send its response to the queue. Consequently, a Consumer thread is responsible of reading those responses from the queue and send them to the Client's respective private fifo. In order to manage the queue, a mutex and two semaphores are used, where the semaphores are responsible for checking if the queue is empty or full.
+
+At the end of the specified time, an expected Poison_Pill message is sent to the queue in order to notify the Consumer thread that the Server time reached to the end.
+
+After this, a verification to the queue is done in order, sending back to the Client all the tasks that weren't executed on time.
 
 ### Self evaluation
 
