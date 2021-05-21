@@ -88,9 +88,12 @@ The main thread is exited upon finishing thread creation. The program only ends 
 
 ## Server code structure
 
-To have a better organization of the code, the headers file path was changed so, in order to run the client and the lib provided by the teacher the "#includes" done in each respectively .c file must be changed to the correct path: "headers/queue/common/common.h" in the case of client, "headers/lib/lib.h" and "headers/delay.h" in the case of the lib.
+To have a better organization of the code the headers file path was changed so, in order to run the 
+client and the lib provided by the teacher the "#includes" done in each respectively .c file must be changed to the correct path: "headers/queue/common/common.h" in the case of client, "headers/lib/lib.h" and "headers/delay.h" in the case of the lib. 
 
-Like in the client code, all code was kept in the same file as all functions serve a similar purpose, and the file itself maintains a single responsibility (managing the server). With that said, each function has a distinct purpose, and modulatiry was taken heavily taken into account. The server code can be divided into a similar structure to that of the client. As such, there are these main sections:
+Like in the client code, all code was kept in the same file as all functions serve a similar purpose, and the file itself maintains a single responsibility (managing the
+server). With that said, each function has a distinct purpose, and modulatiry was taken heavily taken into account. The server code can be divided into a similar
+structure to that of the client. As such, there are these main sections:
 
 - main - A main function responsible for providing the overall flow of the program.
 
@@ -102,15 +105,14 @@ time is up, inserting and retreiving items from the queue, etc.
 
 ## Server implementation details
 
-To store the messages received by the Client a queue structure was built, in which we store the messages received by order and get the responses to the tasks to them.
-
-The Server program can be divided in two main parts: the Consumer thread and the Producers threads.
-
-The objective of Producers threads is to execute the tasks sent by the main thread and send its response to the queue. Consequently, a Consumer thread is responsible of reading those responses from the queue and send them to the Client's respective private fifo. In order to manage the queue, a mutex and two semaphores are used, where the semaphores are responsible for checking if the queue is empty or full.
-
+To store the messages received by the Client a queue structure were built, in which we store the messages received by order and get the responses to the tasks to them.
+The Server program can be divided in two main parts: the Consumer thread and the Producers threads. 
+The objective of Producers threads is to execute the tasks sent by the main thread and send it response to the queue. Consequently, a Consumer thread is responsible of reading those responses from the queue and send them to the Client's respective private fifo. In order to manage the queue, a mutex and two semaphores are used, where the semaphores are responsible for check if the queue is empty or full.
 At the end of the specified time, an expected Poison_Pill message is sent to the queue in order to notify the Consumer thread that the Server time reached to the end.
-
 After this, a verification to the queue is done in order, sending back to the Client all the tasks that weren't executed on time.
+
+! Mention queue structure built from scratch
+! Mention file structure for cpplint
 
 ### Self evaluation
 
