@@ -88,7 +88,11 @@ The main thread is exited upon finishing thread creation. The program only ends 
 
 ## Server code structure
 
-Once again, all code was kept in the same file as all functions serve a similar purpose, and the file itself maintains a single responsibility (managing the
+To have a better organization of the code the headers file path was changed so, in order to run the 
+client provided by the teacher and the lib of the library, the "#includes" done in each respectively
+.c file must be changed.
+
+Like in the client code, all code was kept in the same file as all functions serve a similar purpose, and the file itself maintains a single responsibility (managing the
 server). With that said, each function has a distinct purpose, and modulatiry was taken heavily taken into account. The server code can be divided into a similar
 structure to that of the client. As such, there are these main sections:
 
